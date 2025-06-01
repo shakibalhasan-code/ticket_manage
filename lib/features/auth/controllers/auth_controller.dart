@@ -59,14 +59,9 @@ class AuthController extends GetxController {
         Get.offAllNamed(Routes.forgotPasswordVerify);
       } else {
         final responseData = jsonDecode(response.body);
-        Get.snackbar(
-          'Registration Failed',
-          responseData['message'] ?? 'Could not create account.',
-        );
       }
     } catch (e) {
       printError(info: 'Error during account creation: $e');
-      Get.snackbar('Error', 'An error occurred during account creation.');
     } finally {
       isLoading.value = false;
     }
@@ -87,7 +82,6 @@ class AuthController extends GetxController {
         final responseData = jsonDecode(response.body);
         final token = responseData['data']['accessToken'] ?? '';
         if (token.isEmpty) {
-          Get.snackbar('Error', 'Failed to retrieve access token.');
           isLoading.value = false;
           return;
         }
@@ -95,14 +89,9 @@ class AuthController extends GetxController {
         Get.offAllNamed(Routes.home);
       } else {
         final responseData = jsonDecode(response.body);
-        Get.snackbar(
-          'Login Failed',
-          responseData['message'] ?? 'Invalid credentials.',
-        );
       }
     } catch (e) {
       printError(info: 'Error during login: $e');
-      Get.snackbar('Error', 'An error occurred during login.');
     } finally {
       isLoading.value = false;
     }
@@ -114,7 +103,6 @@ class AuthController extends GetxController {
 
       final otpValue = otpPinController.text.trim();
       if (otpValue.length != 4) {
-        Get.snackbar('Invalid OTP', 'Please enter the 4-digit code.');
         isLoading.value = false;
         return;
       }
@@ -126,7 +114,6 @@ class AuthController extends GetxController {
               : emailController.text.trim();
 
       if (emailToVerify.isEmpty) {
-        Get.snackbar('Error', 'Email not found for OTP verification.');
         isLoading.value = false;
         return;
       }
@@ -148,14 +135,9 @@ class AuthController extends GetxController {
         }
       } else {
         final responseData = jsonDecode(response.body);
-        Get.snackbar(
-          'OTP Verification Failed',
-          responseData['message'] ?? 'Please check the code and try again.',
-        );
       }
     } catch (e) {
       printError(info: 'Error during OTP verification: $e');
-      Get.snackbar('Error', 'An error occurred while verifying OTP.');
     } finally {
       isLoading.value = false;
     }
@@ -173,7 +155,6 @@ class AuthController extends GetxController {
               : emailController.text.trim();
 
       if (emailToResend.isEmpty) {
-        Get.snackbar('Error', 'Email not found for resending OTP.');
         isLoading.value = false;
         return;
       }
@@ -188,17 +169,11 @@ class AuthController extends GetxController {
       if (response.statusCode == 200) {
         otpResendSeconds.value = 60;
         _startOtpResendTimer();
-        Get.snackbar('OTP Sent', 'A new OTP has been sent to your email.');
       } else {
         final responseData = jsonDecode(response.body);
-        Get.snackbar(
-          'Error',
-          responseData['message'] ?? 'Failed to resend OTP.',
-        );
       }
     } catch (e) {
       printError(info: 'Error during OTP resend: $e');
-      Get.snackbar('Error', 'An error occurred while resending OTP.');
     } finally {
       isLoading.value = false;
     }
@@ -209,15 +184,10 @@ class AuthController extends GetxController {
       isLoading.value = true;
       if (newPasswordController.text.trim() !=
           confirmPassContoller.text.trim()) {
-        Get.snackbar('Error', 'Passwords do not match.');
         isLoading.value = false;
         return;
       }
       if (emailForPasswordReset.value.isEmpty) {
-        Get.snackbar(
-          'Error',
-          'Session expired or email not found. Please try password reset again.',
-        );
         isLoading.value = false;
         Get.offAllNamed(Routes.signIn);
         return;
@@ -234,20 +204,11 @@ class AuthController extends GetxController {
       );
       if (response.statusCode == 200) {
         Get.offAllNamed(Routes.signIn);
-        Get.snackbar(
-          'Success',
-          'Password has been reset successfully. Please login.',
-        );
       } else {
         final responseData = jsonDecode(response.body);
-        Get.snackbar(
-          'Password Reset Failed',
-          responseData['message'] ?? 'Could not reset password.',
-        );
       }
     } catch (e) {
       printError(info: 'Error during password reset: $e');
-      Get.snackbar('Error', 'An error occurred during password reset.');
     } finally {
       isLoading.value = false;
     }
@@ -258,7 +219,6 @@ class AuthController extends GetxController {
       isLoading.value = true;
       final email = emailController.text.trim();
       if (email.isEmpty) {
-        Get.snackbar('Error', 'Please enter your email address.');
         isLoading.value = false;
         return;
       }
@@ -273,14 +233,9 @@ class AuthController extends GetxController {
         onOtpScreenInit();
       } else {
         final responseData = jsonDecode(response.body);
-        Get.snackbar(
-          'Error',
-          responseData['message'] ?? 'Failed to initiate password reset.',
-        );
       }
     } catch (e) {
       printError(info: 'Error during forgot password: $e');
-      Get.snackbar('Error', 'An error occurred. Please try again.');
     } finally {
       isLoading.value = false;
     }
