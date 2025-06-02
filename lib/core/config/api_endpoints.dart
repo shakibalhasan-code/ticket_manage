@@ -1,4 +1,6 @@
 class ApiEndpoints {
+  // Base URL for images
+  static const String baseImageUrl = 'http://192.168.10.18:5001/';
   static const String baseUrl = 'http://192.168.10.18:5001/api';
 
   static const String login = '$baseUrl/auth/login';
@@ -27,4 +29,7 @@ class ApiEndpoints {
       '$baseUrl/notification/get-notification-from-admin';
 
   static const String getTicketById = '$baseUrl/ticket';
+
+  static const String getProducts = '$baseUrl/product';
+  static const String getBrands = '$baseUrl/brand';
 }

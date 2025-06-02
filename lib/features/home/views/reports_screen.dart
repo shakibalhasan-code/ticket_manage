@@ -3,7 +3,9 @@
 // ------------------------------
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:workflowx/controllers/home_controller.dart';
 import 'package:workflowx/core/constants/app_assets.dart';
+import 'package:workflowx/core/models/report_model.dart';
 import 'package:workflowx/core/routes/app_pages.dart';
 
 import '../widget/report_ticket_card.dart';
@@ -17,64 +19,7 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   int _currentNavIndex = 0;
-
-  final List<String> droneCategories = [
-    'DJI Mini',
-    'DJI Air 3',
-    'Skydio',
-    'DJI',
-    'DJI Air',
-  ];
-
-  final List<String> droneCategoryImages = [
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80', // dummy images
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80', // dummy images
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80', // dummy images
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80', // dummy images
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80', // dummy images
-  ];
-
-  final List<Map<String, String>> droneCards = [
-    {
-      'image':
-          'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80',
-      'title': 'DJI Mini 2',
-      'description': 'Compact, 4K drone with long-range stable flight.',
-    },
-    {
-      'image':
-          'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80',
-      'title': 'DJI Air 3',
-      'description': 'Compact, 4K drone with long-range stable flight.',
-    },
-  ];
-
-  final List<Map<String, String>> reportTickets = [
-    {
-      'ticketNo': 'Ticket No-07',
-      'status': 'In progress',
-      'title': 'Technical Issue Reporting',
-      'userName': 'John Max',
-      'code': '54654',
-      'date': '10/5/2025',
-    },
-    {
-      'ticketNo': 'Ticket No-07',
-      'status': 'Solved',
-      'title': 'Technical Issue Reporting',
-      'userName': 'John Max',
-      'code': '52656',
-      'date': '10/5/2025',
-    },
-    {
-      'ticketNo': 'Ticket No-07',
-      'status': 'Solved',
-      'title': 'Technical Issue Reporting',
-      'userName': 'John Max',
-      'code': '52656',
-      'date': '10/5/2025',
-    },
-  ];
+  final homeController = Get.find<MainHomeController>();
 
   void _onReportTicketPressed() {
     // TODO: Implement report ticket button pressed action
@@ -120,28 +65,43 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
 
               const SizedBox(height: 12),
-
-              // Report Ticket cards list vertical
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: reportTickets.length,
-                itemBuilder: (context, index) {
-                  final ticket = reportTickets[index];
-                  return InkWell(
-                    onTap: () => _onReportPressed(ticket['title']!),
-                    child: ReportTicketCard(
-                      ticketNo: ticket['ticketNo']!,
-                      status: ticket['status']!,
-                      title: ticket['title']!,
-                      userName: ticket['userName']!,
-                      code: ticket['code']!,
-                      date: ticket['date']!,
-                    ),
-                  );
-                },
-              ),
-
+              if (homeController.reportsList.isEmpty) ...[
+                // No reports found message
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 12),
+                      const Text(
+                        'No reports found',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                // List of report tickets
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: homeController.reportsList.length,
+                  itemBuilder: (context, index) {
+                    ReportModel report = homeController.reportsList[index];
+                    return ReportTicketCard(
+                      report: report,
+                      onPressed: () {
+                        Get.to(
+                          () => ReportTicketCard(
+                            report: report,
+                            onPressed: () => onReportPassed(report),
+                          ),
+                          transition: Transition.rightToLeft,
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
               const SizedBox(height: 16),
             ],
           ),
@@ -150,5 +110,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
       backgroundColor: Colors.white,
     );
+  }
+
+  void onReportPassed(ReportModel report) {
+    Get.toNamed(Routes.ticketDetails, arguments: report);
   }
 }

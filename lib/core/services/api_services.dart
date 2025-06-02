@@ -32,6 +32,42 @@ class ApiServices {
     }
   }
 
+  static Future<http.Response> fetchData({required String url}) async {
+    try {
+      final token = await PrefHelper.getString(AppConstants.token);
+      if (token == null || token.isEmpty) {
+        GlobalBase.showToast(
+          'Authentication token is missing. Please login again.',
+          true,
+        ); // Changed to true for error
+      }
+      print('Fetching data from $url with token: $token');
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': ' Bearer $token',
+        },
+      );
+      // Consider moving toast logic to the caller or making it conditional
+      _handleResponseMessages(response);
+      if (response.statusCode == 200) {
+        print('Response Body (GET $url): ${response.body}');
+        return response;
+      } else {
+        print('Error Response Body (GET $url): ${response.body}');
+        throw Exception(
+          'Failed to load data from $url. Status code: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Exception in getRequest ($url): $e');
+      // GlobalBase.showToast('Network error or server issue.', true); // Optional: Generic error for network issues
+      rethrow;
+    }
+  }
+
   static Future<http.Response> postOnly({
     required String url,
     required Map<String, dynamic> body,

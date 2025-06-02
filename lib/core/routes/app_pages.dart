@@ -44,6 +44,7 @@ class AppPages {
       name: Routes.signInNow,
       page: () => const SignInNowScreen(),
       transition: Transition.rightToLeft,
+      binding: AuthBinding(),
     ),
     GetPage(
       name: Routes.signUpNow,
@@ -77,11 +78,7 @@ class AppPages {
       page: () => const PrivacyPolicyScreen(),
       transition: Transition.rightToLeft,
     ),
-    GetPage(
-      name: Routes.report,
-      page: () => const FileReportScreen(),
-      transition: Transition.rightToLeft,
-    ),
+
     GetPage(
       name: Routes.ticketDetails,
       page: () => ReportPreviewScreen(),

@@ -131,7 +131,7 @@ class AuthController extends GetxController {
         if (emailForPasswordReset.value.isNotEmpty) {
           Get.offAllNamed(Routes.createNewPassword);
         } else {
-          Get.offAllNamed(Routes.home);
+          Get.offAllNamed(Routes.signInNow);
         }
       } else {
         final responseData = jsonDecode(response.body);

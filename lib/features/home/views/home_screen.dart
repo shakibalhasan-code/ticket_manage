@@ -1,10 +1,12 @@
-// ------------------------------
-// Home Screen Main Widget
-// ------------------------------
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:workflowx/controllers/home_controller.dart';
+import 'package:workflowx/core/config/api_endpoints.dart';
 import 'package:workflowx/core/constants/app_assets.dart';
+import 'package:workflowx/core/models/brand_model.dart';
+import 'package:workflowx/core/models/product_model.dart';
 import 'package:workflowx/core/routes/app_pages.dart';
+import 'package:workflowx/features/home/views/file_report_screen.dart';
 
 import '../widget/drone_card.dart';
 import '../widget/report_ticket_card.dart';
@@ -17,71 +19,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<String> droneCategories = [
-    'DJI Mini',
-    'DJI Air 3',
-    'Skydio',
-    'DJI',
-    'DJI Air',
-  ];
-
-  final List<String> droneCategoryImages = [
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80', // dummy images
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80', // dummy images
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80', // dummy images
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80', // dummy images
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80', // dummy images
-  ];
-
-  final List<Map<String, String>> droneCards = [
-    {
-      'image':
-          'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80',
-      'title': 'DJI Mini 2',
-      'description': 'Compact, 4K drone with long-range stable flight.',
-    },
-    {
-      'image':
-          'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=160&q=80',
-      'title': 'DJI Air 3',
-      'description': 'Compact, 4K drone with long-range stable flight.',
-    },
-  ];
-
-  final List<Map<String, String>> reportTickets = [
-    {
-      'ticketNo': 'Ticket No-07',
-      'status': 'In progress',
-      'title': 'Technical Issue Reporting',
-      'userName': 'John Max',
-      'code': '54654',
-      'date': '10/5/2025',
-    },
-    {
-      'ticketNo': 'Ticket No-07',
-      'status': 'Solved',
-      'title': 'Technical Issue Reporting',
-      'userName': 'John Max',
-      'code': '52656',
-      'date': '10/5/2025',
-    },
-    {
-      'ticketNo': 'Ticket No-07',
-      'status': 'Solved',
-      'title': 'Technical Issue Reporting',
-      'userName': 'John Max',
-      'code': '52656',
-      'date': '10/5/2025',
-    },
-  ];
+  // Initialize HomeController
+  final MainHomeController homeController = Get.put(MainHomeController());
 
   void _onReportTicketPressed() {
     Get.toNamed(Routes.report);
-  }
-
-  void _onReportPressed(String droneName) {
-    print(droneName);
-    Get.toNamed(Routes.report, arguments: droneName);
   }
 
   @override
@@ -100,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: CircleAvatar(
               radius: 20,
               backgroundImage: NetworkImage(
-                'https://thispersondoesnotexist.com/',
+                'https://thispersondoesnotexist.com/', // Replace with actual user image logic
               ),
             ),
           ),
@@ -128,15 +70,75 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: TextField(
+                        controller: homeController.searchController,
                         decoration: const InputDecoration(
                           hintText: 'Search Drone',
                           border: InputBorder.none,
                         ),
+                        onSubmitted: (value) {
+                          homeController.searchAndFilterProducts(
+                            searchTerm: value,
+                          );
+                        },
                       ),
                     ),
                     IconButton(
                       onPressed: () {
-                        // TODO: Implement filter
+                        // TODO: Implement filter UI (e.g., show a bottom sheet or dialog)
+                        // For now, let's simulate a filter action
+                        Get.bottomSheet(
+                          Container(
+                            height: 200,
+                            color: Colors.white,
+                            child: Column(
+                              children: [
+                                ListTile(
+                                  title: Text(
+                                    "Filter Options",
+                                    style: Get.textTheme.titleLarge,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Obx(
+                                    () => ListView.builder(
+                                      itemCount:
+                                          homeController.brandsList.length,
+                                      itemBuilder: (context, index) {
+                                        final brand =
+                                            homeController.brandsList[index];
+                                        return ListTile(
+                                          title: Text(
+                                            brand.name ?? "Unknown Brand",
+                                          ),
+                                          onTap: () {
+                                            homeController
+                                                .selectedFilter
+                                                .value = brand.sId ?? "";
+                                            homeController
+                                                .searchAndFilterProducts(
+                                                  brandId: brand.sId,
+                                                );
+                                            Get.back(); // Close bottom sheet
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    homeController.selectedFilter.value = "";
+                                    homeController
+                                        .searchAndFilterProducts(); // Clear filter
+                                    Get.back();
+                                  },
+                                  child: Text("Clear Filter"),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                        print('Filter button pressed');
                       },
                       icon: const Icon(Icons.filter_list, color: Colors.grey),
                     ),
@@ -144,120 +146,162 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Drone categories list (horizontal)
-              SizedBox(
-                height: 100,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: droneCategories.length,
-                  itemBuilder: (context, index) {
-                    return InkWell(
-                      onTap: () {
-                        _onReportPressed("Dummy Drone");
-                      },
-                      child: Container(
-                        width: 70,
+              // Drone categories list (horizontal) - Brands
+              Obx(() {
+                if (homeController.isLoadingBrands.value) {
+                  return const SizedBox(
+                    height: 100,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (homeController.brandsList.isEmpty) {
+                  return const SizedBox(
+                    height: 100,
+                    child: Center(child: Text('No categories found.')),
+                  );
+                }
+                return SizedBox(
+                  height: 100,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: homeController.brandsList.length,
+                    itemBuilder: (context, index) {
+                      final Brand brand = homeController.brandsList[index];
+                      return Container(
+                        width: 80, // Increased width for better text display
                         margin: EdgeInsets.only(
-                          right: index == droneCategories.length - 1 ? 0 : 16,
+                          right:
+                              index == homeController.brandsList.length - 1
+                                  ? 0
+                                  : 16,
                         ),
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             CircleAvatar(
                               radius: 28,
-                              backgroundImage: NetworkImage(
-                                droneCategoryImages[index],
-                              ),
-                              backgroundColor: Colors.transparent,
+                              backgroundImage:
+                                  (brand.image != null &&
+                                          brand.image!.isNotEmpty)
+                                      ? NetworkImage(
+                                        ('${ApiEndpoints.baseImageUrl}/${brand.image}'),
+                                      )
+                                      // Use a placeholder if no image or AppAssets.logo is not suitable
+                                      : const AssetImage(AppAssets.logo)
+                                          as ImageProvider,
+                              backgroundColor: Colors.grey.shade200,
+                              onBackgroundImageError: (_, __) {
+                                // This is to handle if NetworkImage fails
+                              },
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              droneCategories[index],
+                              brand.name ?? 'N/A',
                               style: const TextStyle(fontSize: 12),
                               textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
+                      );
+                    },
+                  ),
+                );
+              }),
+
+              const SizedBox(height: 16), // Increased spacing
+              // Drone cards horizontal scroll - Products
+              Obx(() {
+                if (homeController.isLoadingProducts.value) {
+                  return const SizedBox(
+                    height: 290, // Adjusted to match DroneCard height + margin
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (homeController.productsList.isEmpty) {
+                  return SizedBox(
+                    height: 290,
+                    child: Center(
+                      child: Text(
+                        homeController.selectedFilter.isNotEmpty ||
+                                homeController.searchController.text.isNotEmpty
+                            ? 'No drones match your criteria.'
+                            : 'No drones available.',
                       ),
-                    );
-                  },
-                ),
-              ),
+                    ),
+                  );
+                }
+                return SizedBox(
+                  height: 290,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: homeController.productsList.length,
+                    itemBuilder: (context, index) {
+                      final Product product =
+                          homeController.productsList[index];
+                      return DroneCard(
+                        // Ensure your API provides a full URL or prepend a base URL
+                        imageUrl:
+                            '${ApiEndpoints.baseImageUrl}/${product.image}' ??
+                            'https://via.placeholder.com/160x120.png?text=No+Image',
+                        title: product.model ?? 'N/A',
+                        description:
+                            product.description ?? 'No description available.',
+                        onReport:
+                            () => Get.to(FileReportScreen(product: product)),
+                      );
+                    },
+                  ),
+                );
+              }),
 
-              const SizedBox(height: 8),
-
-              // Drone cards horizontal scroll
-              SizedBox(
-                height: 280,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: droneCards.length,
-                  itemBuilder: (context, index) {
-                    final drone = droneCards[index];
-                    return DroneCard(
-                      imageUrl: drone['image']!,
-                      title: drone['title']!,
-                      description: drone['description']!,
-                      onReport: () => _onReportPressed(drone['title']!),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
+              const SizedBox(height: 16), // Increased spacing
               // Recent Report Ticket header
-              const Text(
-                'Recent Report Ticket',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Recent Report Ticket',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      // TODO: Navigate to a "View All Tickets" screen
+                      Get.snackbar(
+                        "Action",
+                        "View All Tickets pressed",
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                    },
+                    child: const Text('View All'),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 12),
 
               // Report Ticket cards list vertical
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: reportTickets.length,
-                itemBuilder: (context, index) {
-                  final ticket = reportTickets[index];
-                  return InkWell(
-                    onTap: () {
-                      Get.toNamed(Routes.ticketDetails, arguments: ticket);
-                    },
-                    child: ReportTicketCard(
-                      ticketNo: ticket['ticketNo']!,
-                      status: ticket['status']!,
-                      title: ticket['title']!,
-                      userName: ticket['userName']!,
-                      code: ticket['code']!,
-                      date: ticket['date']!,
-                    ),
-                  );
-                },
-              ),
+              // This part still uses dummy data. You'd fetch this similarly if it comes from an API.
+              Obx(() {
+                if (homeController.isLoadingTickets.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (homeController.reportsList.isEmpty) {
+                  return const Center(child: Text('No recent tickets found.'));
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: homeController.reportsList.length,
+                  itemBuilder: (context, index) {
+                    final ticket = homeController.reportsList[index];
+                    return ReportTicketCard(report: ticket, onPressed: () {});
+                  },
+                );
+              }),
 
               const SizedBox(height: 16),
-
-              // Report Problem button
-              SizedBox(
-                height: 50,
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _onReportTicketPressed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    'Report Problem',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
             ],
           ),
         ),
