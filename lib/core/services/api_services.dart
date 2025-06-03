@@ -276,6 +276,42 @@ class ApiServices {
     }
   }
 
+  static Future<http.Response> updateProfileWithImage({
+    required String url,
+    required Map<String, String> fields, // Text fields
+    File? imageFile, // Optional image file
+    String imageFieldKey = 'image', // Key for the image file in the form data
+    String? authToken, // If auth is needed
+  }) async {
+    var request = http.MultipartRequest('PUT', Uri.parse(url)); // Or 'POST'
+
+    // Add headers (e.g., Authorization)
+    if (authToken != null) {
+      request.headers['Authorization'] = 'Bearer $authToken';
+    }
+    request.headers['Accept'] = 'application/json';
+
+    // Add text fields
+    request.fields.addAll(fields);
+
+    // Add image file if provided
+    if (imageFile != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath(imageFieldKey, imageFile.path),
+      );
+    }
+
+    try {
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      return response;
+    } catch (e) {
+      print('Error in updateProfileWithImage: $e');
+      // Rethrow or return a custom error response
+      throw Exception('Failed to update profile: $e');
+    }
+  }
+
   // REMOVED _handleResponseMessages function
   // static void _handleResponseMessages(http.Response response) {
   //   try {

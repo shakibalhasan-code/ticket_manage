@@ -37,4 +37,10 @@ class ApiEndpoints {
 
   static String notificationMarkAsRead(String notificationId) =>
       '$baseUrl/notification/mark-as-read/$notificationId';
+
+  static String getSingleTicket(String ticketId) => '$baseUrl/ticket/$ticketId';
+
+  static String updateUserProfile = '$baseUrl/user/update-profile-data';
+
+  static String updateUserProfileImage = '$baseUrl/user/update-profile-image';
 }

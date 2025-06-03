@@ -65,13 +65,7 @@ class AppPages {
       transition: Transition.rightToLeft,
       page: () => const CreateNewPasswordScreen(),
     ),
-    GetPage(
-      name: Routes.profile,
 
-      transition: Transition.rightToLeft,
-
-      page: () => const ProfileDetailsScreen(),
-    ),
     GetPage(
       name: Routes.privacyPolicy,
       page: () => const PrivacyPolicyScreen(),

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:workflowx/core/constants/app_assets.dart';
 import 'package:workflowx/core/routes/app_pages.dart';
 import 'package:workflowx/core/utils/svg_icon.dart';
+import 'package:workflowx/features/home/views/profile_details_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -21,6 +22,10 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         foregroundColor: Colors.black87,
         centerTitle: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SafeArea(
         child: Padding(
@@ -94,7 +99,7 @@ class ProfileScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 16),
                 ),
                 onTap: () {
-                  Get.toNamed(Routes.profile);
+                  Get.to(ProfileDetailsScreen());
                 },
               ),
 

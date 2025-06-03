@@ -125,7 +125,7 @@ class NotificationScreen extends StatelessWidget {
                   return NotificationCard(
                     notification: notif,
                     onTap: () {
-                      controller.markNotificationAsRead(notif.sId!);
+                      controller.markNotificationAsReadAndNavigate(notif);
                     },
                   );
                 },
