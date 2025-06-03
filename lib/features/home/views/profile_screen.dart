@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:workflowx/controllers/profile_controller.dart';
 import 'package:workflowx/core/constants/app_assets.dart';
 import 'package:workflowx/core/routes/app_pages.dart';
 import 'package:workflowx/core/utils/svg_icon.dart';
 import 'package:workflowx/features/home/views/profile_details_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  ProfileScreen({super.key});
 
-  final String userName = "John Max";
-  final String userLocation = "New York";
-  final String userImageUrl =
-      "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=80&q=80";
+  final profileController = Get.put(ProfileController());
 
   @override
   Widget build(BuildContext context) {
@@ -22,117 +20,128 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         foregroundColor: Colors.black87,
         centerTitle: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Profile picture with camera icon overlay
-              Row(
-                children: [
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 36,
-                        backgroundImage: NetworkImage(userImageUrl),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.grey.shade200,
-                            border: Border.all(color: Colors.white, width: 2),
+          child: Obx(() {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Profile picture with camera icon overlay
+                Row(
+                  children: [
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 36,
+                          backgroundImage: NetworkImage(
+                            '${profileController.userData.value.userProfile?.image}',
                           ),
-                          padding: const EdgeInsets.all(6),
-                          child: const Icon(
-                            Icons.camera_alt_outlined,
-                            size: 18,
-                            color: Colors.black54,
+                          backgroundColor: Colors.grey.shade200,
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.grey.shade200,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            padding: const EdgeInsets.all(6),
+                            child: const Icon(
+                              Icons.camera_alt_outlined,
+                              size: 18,
+                              color: Colors.black54,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
+                      ],
+                    ),
+                    const SizedBox(width: 16),
 
-                  // User name and location
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        userName,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                    // User name and location
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          profileController
+                                  .userData
+                                  .value
+                                  .userProfile
+                                  ?.fullName ??
+                              'User Name',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        userLocation,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700,
+                        const SizedBox(height: 4),
+                        Text(
+                          profileController
+                                  .userData
+                                  .value
+                                  .userProfile
+                                  ?.address ??
+                              'example.com',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade700,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 40),
+
+                // Menu option: Edit Profile
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const SvgIcon(assetName: AppAssets.iconUser),
+                  title: const Text(
+                    'Edit Profile',
+                    style: TextStyle(fontSize: 16),
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 40),
-
-              // Menu option: Edit Profile
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const SvgIcon(assetName: AppAssets.iconUser),
-                title: const Text(
-                  'Edit Profile',
-                  style: TextStyle(fontSize: 16),
+                  onTap: () {
+                    Get.to(ProfileDetailsScreen());
+                  },
                 ),
-                onTap: () {
-                  Get.to(ProfileDetailsScreen());
-                },
-              ),
 
-              // Menu option: Privacy Policy
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const SvgIcon(assetName: AppAssets.iconPolicy),
-                title: const Text(
-                  'Privacy Policy',
-                  style: TextStyle(fontSize: 16),
+                // Menu option: Privacy Policy
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const SvgIcon(assetName: AppAssets.iconPolicy),
+                  title: const Text(
+                    'Privacy Policy',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  onTap: () {
+                    Get.toNamed(Routes.privacyPolicy);
+                  },
                 ),
-                onTap: () {
-                  Get.toNamed(Routes.privacyPolicy);
-                },
-              ),
 
-              // Menu option: Log Out
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const SvgIcon(assetName: AppAssets.iconLogout),
-                title: const Text(
-                  'Log Out',
-                  style: TextStyle(fontSize: 16, color: Colors.red),
+                // Menu option: Log Out
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const SvgIcon(assetName: AppAssets.iconLogout),
+                  title: const Text(
+                    'Log Out',
+                    style: TextStyle(fontSize: 16, color: Colors.red),
+                  ),
+                  onTap: () {
+                    showLogoutBottomSheet(context, () {
+                      // Handle logout logic here
+                      Get.offAllNamed(Routes.signIn);
+                    });
+                  },
                 ),
-                onTap: () {
-                  showLogoutBottomSheet(context, () {
-                    // Handle logout logic here
-                    Get.offAllNamed(Routes.signIn);
-                  });
-                },
-              ),
-            ],
-          ),
+              ],
+            );
+          }),
         ),
       ),
       backgroundColor: Colors.white,
