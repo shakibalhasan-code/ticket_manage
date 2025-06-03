@@ -1,81 +1,97 @@
+// ReportController.dart
+import 'dart:convert'; // Import for jsonEncode
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:workflowx/controllers/home_controller.dart';
 import 'package:workflowx/core/config/api_endpoints.dart';
+import 'package:workflowx/core/models/message_model.dart';
 import 'package:workflowx/core/services/api_services.dart';
 
 class ReportController extends GetxController {
   var isLoading = false.obs;
 
-  // This controller mainly handles the submission logic.
-  // Form field values are managed by FileReportScreen's local state.
+  var messagesList = <ChatMessage>[].obs;
+  var isLoadingMessages = true.obs;
+  var isSendingMessage = false.obs;
+  final TextEditingController messageController = TextEditingController();
+  final homeController = Get.find<MainHomeController>();
 
   Future<bool> submitNewReport({
     required String? productId,
-    required String? productModel,
-
+    // productModel is not in the Postman 'data' field, so it's optional here
+    // unless used for something else before sending.
+    // required String? productModel,
     required String phoneNumber,
     required String? userType,
-    required List<String> issueTypes,
-    String? customIssueDetail,
-    required String issueDescription,
-    required List<XFile> imageFiles, // Pass XFiles
+    required List<String>
+    issueTypes, // This will be the value for the 'issue' key
+    // String? customIssueDetail, // REMOVED - This should be part of issueDescription
+    required String
+    issueDescription, // This should be the final, combined description
+    required List<XFile> imageFiles,
   }) async {
     isLoading.value = true;
     try {
-      // --- Prepare Data for Submission ---
-      // Using FormData is common for multipart requests (if sending files)
-      var formData = FormData({
+      // --- 1. Prepare the 'data' field (textual information as a JSON string) ---
+      // Keys here MUST match what the backend expects (from your Postman example)
+      Map<String, dynamic> textDataMap = {
+        'phone': phoneNumber, // Changed from 'phoneNumber'
+        'issue': issueTypes, // Changed from 'issueTypes'. Value is List<String>
+        'userType': userType ?? 'Customer',
+        'description':
+            issueDescription, // Changed from 'issueDescription'. This is the final combined one.
         'productId': productId ?? '',
+      };
 
-        'phoneNumber': phoneNumber,
-        'userType': userType ?? 'Customer', // Default if null
-        // API might expect issueTypes as a comma-separated string or JSON array string
-        'issueTypes': issueTypes.join(','), // Example: "Hardware,Software"
-        if (customIssueDetail != null && customIssueDetail.isNotEmpty)
-          'customIssueDetail': customIssueDetail,
-        'issueDescription': issueDescription,
-      });
+      String jsonDataPayload = jsonEncode(textDataMap);
 
-      // Add files to FormData
+      // This will be the 'fields' map for the multipart request
+      Map<String, String> fields = {'data': jsonDataPayload};
+
+      // --- 2. Prepare the 'image' field (files) ---
+      List<http.MultipartFile> filesToUpload = [];
       for (int i = 0; i < imageFiles.length; i++) {
         XFile file = imageFiles[i];
-        formData.files.add(
-          MapEntry(
-            'images[$i]', // API might expect 'images[]' or 'images' or specific field names
-            MultipartFile(
-              File(file.path), // Convert XFile path to File
-              filename: file.name,
-              // contentType: MediaType('image', 'jpeg'), // Optional: specify content type
-            ),
+        String extension = file.name.split('.').last.toLowerCase();
+        MediaType? contentType;
+        if (extension == 'jpg' || extension == 'jpeg') {
+          contentType = MediaType('image', 'jpeg');
+        } else if (extension == 'png') {
+          contentType = MediaType('image', 'png');
+        } // Add more types if needed
+
+        filesToUpload.add(
+          await http.MultipartFile.fromPath(
+            'image', // Field name for files is 'image' (singular)
+            file.path,
+            filename: file.name,
+            contentType: contentType,
           ),
         );
-        // Alternative if API expects single 'images' field with multiple files:
-        // formData.files.add(MapEntry(
-        //   'images',
-        //   MultipartFile(File(file.path), filename: file.name),
-        // ));
       }
 
-      Get.log('Submitting Report FormData: ${formData.fields}');
-      for (var fileEntry in formData.files) {
-        Get.log(
-          'File in FormData: ${fileEntry.key} - ${fileEntry.value.filename}',
-        );
-      }
-
-      // --- API Call ---
-      // Replace ApiEndpoints.submitReport with your actual endpoint
-      final response = await ApiServices.post(
-        url: ApiEndpoints.issueNewTicket, // MAKE SURE THIS ENDPOINT IS CORRECT
-        body: {},
+      Get.log('Submitting Multipart Report:');
+      Get.log('Field "data": $jsonDataPayload');
+      Get.log(
+        'Files under "image" key: ${filesToUpload.map((f) => f.filename).join(', ')}',
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Success
-        Get.log('Report submitted successfully: ${response.body}');
+      // --- API Call using postMultipart ---
+      final response = await ApiServices.postMultipart(
+        url: ApiEndpoints.issueNewTicket,
+        fields: fields, // Contains the 'data' field with JSON string
+        files: filesToUpload, // Contains files under the 'image' key
+        requiresAuth: true,
+      );
+
+      Get.log(
+        'Report submitted successfully. Status: ${response.statusCode}, Body: ${response.body}',
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         Get.snackbar(
           'Success',
           'Your report has been submitted successfully!',
@@ -83,39 +99,37 @@ class ReportController extends GetxController {
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
-        return true; // Indicate success
-      } else {
-        // Handle API error
-        Get.log(
-          'Failed to submit report. Status: ${response.statusCode}, Body: ${response.body}',
-        );
-        String errorMessage = 'Failed to submit report. Please try again.';
-        // try {
-        //   // Attempt to parse error message from response body
-        //   var responseBody = response.body;
-        //   if (responseBody is String && responseBody.isNotEmpty) {
-        //     var decodedBody = GetConnect().decoder(responseBody);
-        //     if (decodedBody is Map && decodedBody.containsKey('message')) {
-        //       errorMessage = decodedBody['message'];
-        //     } else if (decodedBody is Map && decodedBody.containsKey('error')) {
-        //       errorMessage = decodedBody['error'];
-        //     }
-        //   }
-        // } catch (e) {
-        //   Get.log("Error parsing error response: $e");
-        // }
 
+        await homeController.getMyTickets(); // Refresh tickets list
+        return true;
+      } else {
+        // Attempt to parse error message from backend
+        String errorMessage = 'Failed to submit report. Please try again.';
+        try {
+          final responseBody = jsonDecode(response.body);
+          if (responseBody is Map && responseBody.containsKey('message')) {
+            errorMessage = responseBody['message'];
+          } else {
+            errorMessage =
+                'Error ${response.statusCode}: ${response.reasonPhrase}';
+          }
+        } catch (_) {
+          // If body is not JSON or doesn't have 'message'
+          errorMessage =
+              'Error ${response.statusCode}: ${response.reasonPhrase ?? "Unknown error"}';
+        }
+        Get.log('Report submission failed: $errorMessage');
         Get.snackbar(
-          'Submission Failed',
+          'Error',
           errorMessage,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,
         );
-        return false; // Indicate failure
+        return false;
       }
     } catch (e) {
-      Get.log('Exception during report submission: $e');
+      Get.log('Exception during report submission in Controller: $e');
       Get.snackbar(
         'Error',
         'An unexpected error occurred: ${e.toString()}',
@@ -123,7 +137,7 @@ class ReportController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
-      return false; // Indicate failure
+      return false;
     } finally {
       isLoading.value = false;
     }

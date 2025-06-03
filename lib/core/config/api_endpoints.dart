@@ -32,4 +32,9 @@ class ApiEndpoints {
 
   static const String getProducts = '$baseUrl/product';
   static const String getBrands = '$baseUrl/brand';
+
+  static String getTicketMessages(String ticketId) => '$baseUrl/chat/$ticketId';
+
+  static String notificationMarkAsRead(String notificationId) =>
+      '$baseUrl/notification/mark-as-read/$notificationId';
 }

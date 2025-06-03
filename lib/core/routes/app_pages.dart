@@ -10,7 +10,6 @@ import 'package:workflowx/features/home/views/file_report_screen.dart';
 import 'package:workflowx/features/home/views/privacy_policy_screen.dart';
 import 'package:workflowx/features/home/views/profile_details_screen.dart';
 import 'package:workflowx/features/home/views/report_preview_reply_screen.dart';
-import 'package:workflowx/features/home/views/report_preview_screen.dart';
 import 'package:workflowx/features/splash/screens/splash_screen.dart';
 
 import '../../features/home/bindings/home_binding.dart';
@@ -79,15 +78,10 @@ class AppPages {
       transition: Transition.rightToLeft,
     ),
 
-    GetPage(
-      name: Routes.ticketDetails,
-      page: () => ReportPreviewScreen(),
-      transition: Transition.rightToLeft,
-    ),
-    GetPage(
-      name: Routes.reportReply,
-      page: () => ReportDetailsWithMessagesScreen(),
-      transition: Transition.rightToLeft,
-    ),
+    // GetPage(
+    //   name: Routes.reportReply,
+    //   page: () => ReportDetailsWithMessagesScreen(),
+    //   transition: Transition.rightToLeft,
+    // ),
   ];
 }

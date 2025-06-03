@@ -81,6 +81,18 @@ class AuthController extends GetxController {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         final token = responseData['data']['accessToken'] ?? '';
+        final userId = responseData['data']['userData']['_id'] ?? '';
+        if (userId.isEmpty) {
+          isLoading.value = false;
+          Get.snackbar(
+            'Error',
+            'User ID is empty. Please try again.',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return;
+        }
+        await PrefHelper.setString(AppConstants.userId, userId);
+
         if (token.isEmpty) {
           isLoading.value = false;
           return;

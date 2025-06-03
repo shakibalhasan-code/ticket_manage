@@ -105,7 +105,7 @@ class ReportTicketCard extends StatelessWidget {
 
             // Title (Issue)
             Text(
-              report.issue ?? 'No Title Provided',
+              report.issue?.join(', ') ?? 'No issue specified',
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

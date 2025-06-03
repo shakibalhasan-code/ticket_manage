@@ -18,7 +18,6 @@ class MainHomeController extends GetxController {
   var isLoadingProducts = false.obs;
   var isLoadingBrands = false.obs;
   var isLoadingTickets = false.obs;
-
   var selectedFilter = ''.obs;
 
   RxList<Product> productsList = <Product>[].obs;
@@ -78,33 +77,61 @@ class MainHomeController extends GetxController {
 
   Future<void> getMyTickets() async {
     try {
-      isLoadingProducts.value = true;
-      reportsList.clear(); // Clear previous data
+      isLoadingTickets.value = true; // <--- CHANGE HERE
+      reportsList.clear();
       final response = await ApiServices.fetchData(
-        url: ApiEndpoints.getProducts,
+        url:
+            ApiEndpoints
+                .getMyTicket, // <--- EXAMPLE: Ensure this is your actual ticket endpoint
       );
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         if (body['data'] != null && body['data'] is List) {
           final tickets = body['data'] as List;
-          reportsList.value =
-              tickets.map((item) => ReportModel.fromJson(item)).toList();
-          printInfo(
-            info: 'Reports fetched successfully: ${reportsList.length} items',
-          );
+          if (tickets.isNotEmpty) {
+            // Good to check if the list itself is not empty
+            reportsList.value =
+                tickets
+                    .map(
+                      (item) =>
+                          ReportModel.fromJson(item as Map<String, dynamic>),
+                    ) // Added explicit cast
+                    .toList();
+            Get.printInfo(
+              // Using Get.printInfo if you are using GetX logging
+              info: 'Reports fetched successfully: ${reportsList.length} items',
+            );
+          } else {
+            reportsList.value = []; // API returned an empty list in 'data'
+            Get.printInfo(
+              info: 'No Reports found (empty "data" list from API).',
+            );
+          }
         } else {
-          print('No Reports data found or data is not a list.');
-          reportsList.value = []; // Set to empty list
+          Get.printInfo(
+            info:
+                'No Reports data found or "data" is not a list in API response.',
+          );
+          reportsList.value = [];
         }
       } else {
-        print(
-          'Failed to load products. Status code: ${response.statusCode}, Body: ${response.body}',
+        Get.printInfo(
+          info:
+              'Failed to load reports. Status code: ${response.statusCode}, Body: ${response.body}',
         );
+
+        reportsList.value = []; // Clear list on error
       }
     } catch (e) {
-      print('Exception in getAllProducts: $e');
+      Get.printInfo(info: 'Exception in getMyTickets: $e');
+      Get.snackbar(
+        "Error",
+        "An unexpected error occurred while fetching your tickets.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      reportsList.value = []; // Clear list on error
     } finally {
-      isLoadingProducts.value = false;
+      isLoadingTickets.value = false; // <--- CHANGE HERE
     }
   }
 

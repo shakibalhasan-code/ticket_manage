@@ -21,10 +21,6 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         foregroundColor: Colors.black87,
         centerTitle: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
       body: SafeArea(
         child: Padding(

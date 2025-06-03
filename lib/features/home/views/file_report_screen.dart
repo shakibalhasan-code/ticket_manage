@@ -1,5 +1,7 @@
+// FileReportScreen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:workflowx/controllers/report_controller.dart';
@@ -8,29 +10,25 @@ import 'package:workflowx/core/models/product_model.dart';
 import 'package:workflowx/core/themes/app_colors.dart';
 
 class FileReportScreen extends StatefulWidget {
-  final Product? product; // Made nullable to handle general report filing too
-  const FileReportScreen({
-    super.key,
-    this.product,
-  }); // Allow product to be optional
+  final Product? product;
+  final Map<String, dynamic>? initialData;
+
+  const FileReportScreen({super.key, this.product, this.initialData});
 
   @override
   State<FileReportScreen> createState() => _FileReportScreenState();
 }
 
 class _FileReportScreenState extends State<FileReportScreen> {
-  // Get an instance of ReportController
   final ReportController reportController = Get.put(ReportController());
-
   final ImagePicker _picker = ImagePicker();
-  final _formKey =
-      GlobalKey<FormState>(); // Add a GlobalKey for Form validation
+  final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _numberController = TextEditingController();
   final TextEditingController _issueDescriptionController =
       TextEditingController();
 
-  String? selectedUserType = 'Customer';
+  String? selectedUserType; // Initialize as null, set in initState
   final List<String> userTypes = ['Customer', 'Distributor'];
   final List<String> issueTypes = [
     'Hardware',
@@ -44,7 +42,97 @@ class _FileReportScreenState extends State<FileReportScreen> {
   List<XFile> selectedFiles = [];
   String? customIssueText;
 
+  @override
+  void initState() {
+    super.initState();
+    _initializeFields();
+  }
+
+  void _initializeFields() {
+    // Default userType if not pre-filled or invalid
+    selectedUserType =
+        (widget.initialData?['userType'] as String?) ?? 'Customer';
+    if (!userTypes.contains(selectedUserType)) {
+      selectedUserType = 'Customer';
+    }
+
+    if (widget.initialData != null) {
+      final data = widget.initialData!;
+
+      // 1. Phone Number (key 'phone' from Postman)
+      if (data['phone'] is String) {
+        _numberController.text = data['phone'] as String;
+      }
+
+      // 2. Issue Types (key 'issue' from Postman, expected to be List<String>)
+      if (data['issue'] is List) {
+        final issuesFromData = List<dynamic>.from(data['issue'] as List);
+        selectedIssueTypes = []; // Reset
+        List<String> unknownIssuesForCustomText = [];
+
+        for (var issueItem in issuesFromData) {
+          if (issueItem is String) {
+            if (issueTypes.contains(issueItem)) {
+              selectedIssueTypes.add(issueItem);
+            } else {
+              // Non-predefined issue, treat as part of 'Other'
+              if (!selectedIssueTypes.contains('Other')) {
+                selectedIssueTypes.add('Other');
+              }
+              unknownIssuesForCustomText.add(issueItem);
+            }
+          }
+        }
+        if (unknownIssuesForCustomText.isNotEmpty) {
+          customIssueText = unknownIssuesForCustomText.join(", ");
+        }
+      }
+
+      // 3. Issue Description (key 'description' from Postman)
+      String mainDescription = (data['description'] as String?) ?? '';
+      _issueDescriptionController.text = mainDescription;
+
+      // Handle 'note' if it exists in initialData and 'Other' is NOT the sole issue type
+      // (as the main 'description' might already be the 'Other' text in that case)
+      // Note: 'note' is not in your Postman 'data' field, so this applies if initialData has it.
+      String note = (data['note'] as String?) ?? '';
+      if (note.isNotEmpty) {
+        bool otherIsOnlyIssueAndDescIsNote =
+            selectedIssueTypes.contains('Other') &&
+            selectedIssueTypes.length == 1 &&
+            (customIssueText == note || mainDescription == note);
+
+        if (!otherIsOnlyIssueAndDescIsNote) {
+          if (_issueDescriptionController.text.isNotEmpty) {
+            _issueDescriptionController.text += "\nNote: $note";
+          } else {
+            _issueDescriptionController.text = "Note: $note";
+          }
+        }
+      }
+
+      // If 'Other' is selected from initialData, and customIssueText is still empty,
+      // check if 'note' was meant for it, or if description itself was the 'Other' text.
+      if (selectedIssueTypes.contains('Other') &&
+          (customIssueText == null || customIssueText!.isEmpty)) {
+        if (note.isNotEmpty) {
+          // If a 'note' field exists and was relevant
+          customIssueText = note;
+        } else if (selectedIssueTypes.length == 1) {
+          // If 'Other' is the *only* selected issue
+          // Then the main description IS the 'Other' text.
+          // We don't want to clear the main description, but 'customIssueText' field can reflect it.
+          customIssueText = mainDescription;
+        }
+      }
+    } else {
+      // No initial data, set defaults
+      selectedUserType = 'Customer'; // Default
+    }
+  }
+
   Future<void> _pickMedia() async {
+    // ... (your existing _pickMedia logic is fine)
     if (selectedFiles.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -100,16 +188,12 @@ class _FileReportScreenState extends State<FileReportScreen> {
   void dispose() {
     _numberController.dispose();
     _issueDescriptionController.dispose();
-    // It's good practice to dispose GetX controllers if they are only used by this screen
-    // and `permanent: false` (default) was used in Get.put.
-    // However, if Get.put is here, it might be better in initState or as a final field
-    // Get.delete<ReportController>(); // If appropriate for your app structure
     super.dispose();
   }
 
   void _submitTicketHandler() async {
     if (!_formKey.currentState!.validate()) {
-      // Use Form key for validation
+      // ... (validation messages are fine)
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please correct the errors in the form.'),
@@ -147,31 +231,47 @@ class _FileReportScreenState extends State<FileReportScreen> {
       return;
     }
 
-    // Call the controller's method
+    // --- Combine descriptions ---
+    String finalDescription = _issueDescriptionController.text.trim();
+    if (selectedIssueTypes.contains('Other') &&
+        customIssueText != null &&
+        customIssueText!.trim().isNotEmpty) {
+      if (finalDescription.isNotEmpty) {
+        finalDescription += "\n\nOther Issue: ${customIssueText!.trim()}";
+      } else {
+        finalDescription = "Other Issue: ${customIssueText!.trim()}";
+      }
+    }
+    // Ensure finalDescription is not empty if it's required
+    if (finalDescription.isEmpty &&
+        selectedIssueTypes
+            .isNotEmpty /* other conditions making desc required */ ) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Issue description cannot be empty.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     bool success = await reportController.submitNewReport(
       productId: widget.product?.sId,
-      productModel: widget.product?.model,
-
+      // productModel: widget.product?.model, // Not in Postman 'data' field
       phoneNumber: _numberController.text,
       userType: selectedUserType,
-      issueTypes: selectedIssueTypes,
-      customIssueDetail: customIssueText,
-      issueDescription: _issueDescriptionController.text,
+      issueTypes: selectedIssueTypes, // This is already a List<String>
+      // customIssueDetail: customIssueText, // REMOVED - now part of finalDescription
+      issueDescription: finalDescription, // Send the combined description
       imageFiles: selectedFiles,
     );
-
-    if (success) {
-      // Optionally, clear the form or navigate back
-      // _formKey.currentState?.reset();
-      // setState(() {
-      //   selectedIssueTypes.clear();
-      //   selectedFiles.clear();
-      //   customIssueText = null;
-      //   selectedUserType = 'Customer';
-      // });
-      Get.back(); // Navigate back after successful submission
-    }
   }
+
+  // ... (rest of your UI code: _buildDetailRow, build, _buildTextField)
+  // Ensure _buildTextField for "Specify 'Other' Issue" updates `customIssueText`
+  // and uses it as initialValue.
+  // Your current _buildTextField for "Other" seems to correctly use `customIssueText` for initialValue
+  // and `onChanged` to update it. That's good.
 
   Widget _buildDetailRow(String label, String? value) {
     return Padding(
@@ -196,7 +296,7 @@ class _FileReportScreenState extends State<FileReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final product = widget.product; // Can be null if filing a general report
+    final product = widget.product;
     final String? imageUrl =
         (product?.image != null && product!.image!.isNotEmpty)
             ? '${ApiEndpoints.baseImageUrl}/${product.image}'
@@ -204,7 +304,6 @@ class _FileReportScreenState extends State<FileReportScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        // ... (appBar code remains the same)
         forceMaterialTransparency: true,
         title: Text(
           product != null
@@ -217,19 +316,17 @@ class _FileReportScreenState extends State<FileReportScreen> {
         centerTitle: false,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => Get.back(), // Use Get.back()
+          onPressed: () => Get.back(),
         ),
       ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Form(
-            // Wrap ListView with Form
             key: _formKey,
             child: ListView(
               children: [
                 if (product != null) ...[
-                  // Show product info only if a product is passed
                   Text(
                     'Product Information',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -278,7 +375,6 @@ class _FileReportScreenState extends State<FileReportScreen> {
                   ),
                   const SizedBox(height: 24),
                 ],
-
                 Text(
                   'Your Details',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -286,8 +382,6 @@ class _FileReportScreenState extends State<FileReportScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                const SizedBox(height: 12),
                 _buildTextField(
                   _numberController,
                   'Phone Number *',
@@ -296,7 +390,6 @@ class _FileReportScreenState extends State<FileReportScreen> {
                   isRequired: true,
                 ),
                 const SizedBox(height: 20),
-
                 Text(
                   'User Type *',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -331,7 +424,6 @@ class _FileReportScreenState extends State<FileReportScreen> {
                       }).toList(),
                 ),
                 const SizedBox(height: 24),
-
                 Text(
                   'Select Issue Type(s) *',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -350,6 +442,9 @@ class _FileReportScreenState extends State<FileReportScreen> {
                         return SizedBox(
                           width: MediaQuery.of(context).size.width * 0.42,
                           child: CheckboxListTile(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15.r),
+                            ),
                             contentPadding: EdgeInsets.zero,
                             title: Text(
                               issueType,
@@ -370,6 +465,7 @@ class _FileReportScreenState extends State<FileReportScreen> {
                       null,
                       'Specify "Other" Issue *',
                       'Describe the other issue here',
+                      initialValue: customIssueText,
                       onChanged: (val) => setState(() => customIssueText = val),
                       maxLines: 2,
                       isRequired: true,
@@ -388,10 +484,10 @@ class _FileReportScreenState extends State<FileReportScreen> {
                   'Issue Description',
                   'Please provide as much detail as possible about the problem...',
                   maxLines: 4,
-                  isRequired: true,
+                  isRequired:
+                      true, // Or false if "Other" can be the only description
                 ),
                 const SizedBox(height: 24),
-
                 Text(
                   'Upload Supporting Media (Optional)',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -407,7 +503,6 @@ class _FileReportScreenState extends State<FileReportScreen> {
                 ),
                 const SizedBox(height: 12),
                 GridView.builder(
-                  // ... (GridView code remains largely the same)
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount:
@@ -450,8 +545,9 @@ class _FileReportScreenState extends State<FileReportScreen> {
                         ),
                       );
                     }
-                    if (index >= selectedFiles.length)
+                    if (index >= selectedFiles.length) {
                       return const SizedBox.shrink();
+                    }
                     final file = selectedFiles[index];
                     return Stack(
                       children: [
@@ -491,8 +587,6 @@ class _FileReportScreenState extends State<FileReportScreen> {
                   },
                 ),
                 const SizedBox(height: 30),
-
-                // Submit Button with Loading State
                 Obx(
                   () => SizedBox(
                     height: 50,
@@ -545,15 +639,17 @@ class _FileReportScreenState extends State<FileReportScreen> {
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
     Function(String)? onChanged,
-    bool isRequired = false, // For TextFormField validation
-    bool isEmail = false, // For email validation
+    bool isRequired = false,
+    bool isEmail = false,
+    String? initialValue,
   }) {
     return Padding(
-      // Add padding around each text field for better spacing
-      padding: const EdgeInsets.only(bottom: 0.0), // Adjusted from 8.0
+      padding: const EdgeInsets.only(
+        bottom: 0.0,
+      ), // Check if you want more bottom padding, default 0
       child: TextFormField(
-        // Changed to TextFormField
         controller: controller,
+        initialValue: controller == null ? initialValue : null,
         keyboardType: keyboardType,
         maxLines: maxLines,
         onChanged: onChanged,
@@ -583,8 +679,14 @@ class _FileReportScreenState extends State<FileReportScreen> {
           filled: true,
         ),
         validator: (value) {
-          // Add validator
           if (isRequired && (value == null || value.trim().isEmpty)) {
+            // For the main description field, allow empty if "Other" is selected and has text
+            if (label == 'Issue Description' &&
+                selectedIssueTypes.contains('Other') &&
+                customIssueText != null &&
+                customIssueText!.trim().isNotEmpty) {
+              return null; // Main description can be empty if "Other" is filled
+            }
             return '$label is required.';
           }
           if (isEmail) {
@@ -594,10 +696,9 @@ class _FileReportScreenState extends State<FileReportScreen> {
               return 'Please enter a valid email address.';
             }
           }
-          return null; // Return null if valid
+          return null;
         },
-        autovalidateMode:
-            AutovalidateMode.onUserInteraction, // Validate as user types
+        autovalidateMode: AutovalidateMode.onUserInteraction,
       ),
     );
   }

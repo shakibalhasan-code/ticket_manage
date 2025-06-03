@@ -4,9 +4,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:workflowx/controllers/home_controller.dart';
+import 'package:workflowx/controllers/report_details_controller.dart';
 import 'package:workflowx/core/constants/app_assets.dart';
 import 'package:workflowx/core/models/report_model.dart';
 import 'package:workflowx/core/routes/app_pages.dart';
+import 'package:workflowx/features/home/views/report_preview_reply_screen.dart';
 
 import '../widget/report_ticket_card.dart';
 
@@ -20,7 +22,6 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   int _currentNavIndex = 0;
   final homeController = Get.find<MainHomeController>();
-
   void _onReportTicketPressed() {
     // TODO: Implement report ticket button pressed action
   }
@@ -39,17 +40,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
           padding: const EdgeInsets.only(left: 12),
           child: Image.asset(AppAssets.logo, fit: BoxFit.contain, height: 36),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: CircleAvatar(
-              radius: 20,
-              backgroundImage: NetworkImage(
-                'https://thispersondoesnotexist.com/',
-              ),
-            ),
-          ),
-        ],
+        // actions: [
+        //   Padding(
+        //     padding: const EdgeInsets.only(right: 12),
+        //     child: CircleAvatar(
+        //       radius: 20,
+        //       backgroundImage: NetworkImage(
+        //         'https://thispersondoesnotexist.com/',
+        //       ),
+        //     ),
+        //   ),
+        // ],
         backgroundColor: Colors.white,
         elevation: 0,
       ),
@@ -90,13 +91,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     return ReportTicketCard(
                       report: report,
                       onPressed: () {
-                        Get.to(
-                          () => ReportTicketCard(
-                            report: report,
-                            onPressed: () => onReportPassed(report),
-                          ),
-                          transition: Transition.rightToLeft,
-                        );
+                        Get.to(ReportDetailsWithMessagesScreen(report: report));
                       },
                     );
                   },
@@ -110,9 +105,5 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
       backgroundColor: Colors.white,
     );
-  }
-
-  void onReportPassed(ReportModel report) {
-    Get.toNamed(Routes.ticketDetails, arguments: report);
   }
 }

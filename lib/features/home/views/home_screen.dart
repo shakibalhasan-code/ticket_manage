@@ -7,6 +7,7 @@ import 'package:workflowx/core/models/brand_model.dart';
 import 'package:workflowx/core/models/product_model.dart';
 import 'package:workflowx/core/routes/app_pages.dart';
 import 'package:workflowx/features/home/views/file_report_screen.dart';
+import 'package:workflowx/features/home/views/report_preview_reply_screen.dart';
 
 import '../widget/drone_card.dart';
 import '../widget/report_ticket_card.dart';
@@ -36,17 +37,17 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.only(left: 12),
           child: Image.asset(AppAssets.logo, fit: BoxFit.contain, height: 36),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: CircleAvatar(
-              radius: 20,
-              backgroundImage: NetworkImage(
-                'https://thispersondoesnotexist.com/', // Replace with actual user image logic
-              ),
-            ),
-          ),
-        ],
+        // actions: [
+        //   Padding(
+        //     padding: const EdgeInsets.only(right: 12),
+        //     child: CircleAvatar(
+        //       radius: 20,
+        //       backgroundImage: NetworkImage(
+        //         'https://thispersondoesnotexist.com/', // Replace with actual user image logic
+        //       ),
+        //     ),
+        //   ),
+        // ],
         backgroundColor: Colors.white,
         elevation: 0,
       ),
@@ -82,66 +83,66 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {
-                        // TODO: Implement filter UI (e.g., show a bottom sheet or dialog)
-                        // For now, let's simulate a filter action
-                        Get.bottomSheet(
-                          Container(
-                            height: 200,
-                            color: Colors.white,
-                            child: Column(
-                              children: [
-                                ListTile(
-                                  title: Text(
-                                    "Filter Options",
-                                    style: Get.textTheme.titleLarge,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Obx(
-                                    () => ListView.builder(
-                                      itemCount:
-                                          homeController.brandsList.length,
-                                      itemBuilder: (context, index) {
-                                        final brand =
-                                            homeController.brandsList[index];
-                                        return ListTile(
-                                          title: Text(
-                                            brand.name ?? "Unknown Brand",
-                                          ),
-                                          onTap: () {
-                                            homeController
-                                                .selectedFilter
-                                                .value = brand.sId ?? "";
-                                            homeController
-                                                .searchAndFilterProducts(
-                                                  brandId: brand.sId,
-                                                );
-                                            Get.back(); // Close bottom sheet
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    homeController.selectedFilter.value = "";
-                                    homeController
-                                        .searchAndFilterProducts(); // Clear filter
-                                    Get.back();
-                                  },
-                                  child: Text("Clear Filter"),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                        print('Filter button pressed');
-                      },
-                      icon: const Icon(Icons.filter_list, color: Colors.grey),
-                    ),
+                    // IconButton(
+                    //   onPressed: () {
+                    //     // TODO: Implement filter UI (e.g., show a bottom sheet or dialog)
+                    //     // For now, let's simulate a filter action
+                    //     Get.bottomSheet(
+                    //       Container(
+                    //         height: 200,
+                    //         color: Colors.white,
+                    //         child: Column(
+                    //           children: [
+                    //             ListTile(
+                    //               title: Text(
+                    //                 "Filter Options",
+                    //                 style: Get.textTheme.titleLarge,
+                    //               ),
+                    //             ),
+                    //             Expanded(
+                    //               child: Obx(
+                    //                 () => ListView.builder(
+                    //                   itemCount:
+                    //                       homeController.brandsList.length,
+                    //                   itemBuilder: (context, index) {
+                    //                     final brand =
+                    //                         homeController.brandsList[index];
+                    //                     return ListTile(
+                    //                       title: Text(
+                    //                         brand.name ?? "Unknown Brand",
+                    //                       ),
+                    //                       onTap: () {
+                    //                         homeController
+                    //                             .selectedFilter
+                    //                             .value = brand.sId ?? "";
+                    //                         homeController
+                    //                             .searchAndFilterProducts(
+                    //                               brandId: brand.sId,
+                    //                             );
+                    //                         Get.back(); // Close bottom sheet
+                    //                       },
+                    //                     );
+                    //                   },
+                    //                 ),
+                    //               ),
+                    //             ),
+                    //             TextButton(
+                    //               onPressed: () {
+                    //                 homeController.selectedFilter.value = "";
+                    //                 homeController
+                    //                     .searchAndFilterProducts(); // Clear filter
+                    //                 Get.back();
+                    //               },
+                    //               child: Text("Clear Filter"),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //       ),
+                    //     );
+                    //     print('Filter button pressed');
+                    //   },
+                    //   icon: const Icon(Icons.filter_list, color: Colors.grey),
+                    // ),
                   ],
                 ),
               ),
@@ -265,17 +266,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Recent Report Ticket',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  TextButton(
-                    onPressed: () {
-                      // TODO: Navigate to a "View All Tickets" screen
-                      Get.snackbar(
-                        "Action",
-                        "View All Tickets pressed",
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    },
-                    child: const Text('View All'),
-                  ),
+                  // TextButton(
+                  //   onPressed: () {
+                  //     // TODO: Navigate to a "View All Tickets" screen
+                  //     Get.snackbar(
+                  //       "Action",
+                  //       "View All Tickets pressed",
+                  //       snackPosition: SnackPosition.BOTTOM,
+                  //     );
+                  //   },
+                  //   child: const Text('View All'),
+                  // ),
                 ],
               ),
 
@@ -296,7 +297,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemCount: homeController.reportsList.length,
                   itemBuilder: (context, index) {
                     final ticket = homeController.reportsList[index];
-                    return ReportTicketCard(report: ticket, onPressed: () {});
+                    return ReportTicketCard(
+                      report: ticket,
+                      onPressed: () {
+                        Get.to(ReportDetailsWithMessagesScreen(report: ticket));
+                      },
+                    );
                   },
                 );
               }),
