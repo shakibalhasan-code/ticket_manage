@@ -3,16 +3,14 @@ import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_storage/get_storage.dart';
-
 import 'core/config/app_constants.dart';
 import 'core/error/error_screen.dart';
 import 'core/routes/app_pages.dart';
 import 'core/themes/app_theme.dart';
 import 'core/themes/theme_controller.dart';
 import 'core/utils/loading_controller.dart';
-import 'l10n/app_localizations.dart'; // Correct import\
+import 'l10n/app_localizations.dart';
 
-//Error Handling state
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {

@@ -145,7 +145,7 @@ class ReportDetailsController extends GetxController {
       // Construct the payload. The backend should know the sender from the auth token.
       // If it doesn't, you'd need to include `senderId: _currentUserId` here,
       // but the ChatMessage model's toJsonForSend does not include it by default.
-      final messageToSend = {'message': text};
+      final messageToSend = {'messages': text};
 
       final response = await ApiServices.post(
         url: ApiEndpoints.getTicketMessages(report.sId!),
@@ -158,7 +158,9 @@ class ReportDetailsController extends GetxController {
           final newMessageData = responseData['data'] as Map<String, dynamic>;
           final newMessage = ChatMessage.fromJson(newMessageData);
           newMessage.isSupportMessage = newMessage.senderId != report.user;
+
           messagesList.add(newMessage);
+          await fetchMessages();
           messageInputController.clear();
         } else {
           Get.snackbar(
