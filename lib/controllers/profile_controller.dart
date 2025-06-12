@@ -3,18 +3,22 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+
 import 'package:workflowx/core/config/api_endpoints.dart';
 import 'package:workflowx/core/models/user_model.dart';
 import 'package:workflowx/core/services/api_services.dart';
 
 class ProfileController extends GetxController {
+  // --- STATE MANAGEMENT VARIABLES ---
   var isLoading = true.obs;
-  var isUpdating = false.obs; // New state for the update button loader
+  var isUpdating = false.obs;
   var hasError = false.obs;
 
   final Rx<UserData> userData = UserData().obs;
   final Rx<File?> selectedImageFile = Rx<File?>(null);
-  final ImagePicker _picker = ImagePicker();
+
+  static const String _kImageFieldName = 'image';
 
   @override
   void onInit() {
@@ -22,7 +26,7 @@ class ProfileController extends GetxController {
     fetchProfileData();
   }
 
-  // This method remains the same
+  // --- DATA FETCHING (Unchanged) ---
   Future<void> fetchProfileData() async {
     try {
       isLoading.value = true;
@@ -32,7 +36,6 @@ class ProfileController extends GetxController {
         final body = jsonDecode(response.body);
         if (body['success'] == true && body['data'] != null) {
           userData.value = UserData.fromJson(body['data']);
-          hasError.value = false;
         } else {
           hasError.value = true;
         }
@@ -41,57 +44,102 @@ class ProfileController extends GetxController {
       }
     } catch (e) {
       hasError.value = true;
+      printError(info: 'Error fetching profile: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> pickImage(ImageSource source) async {
-    try {
-      final XFile? pickedFile = await _picker.pickImage(source: source);
+  // --- IMAGE HANDLING (SIMPLIFIED) ---
 
-      if (pickedFile != null) {
-        selectedImageFile.value = File(pickedFile.path);
-      } else {
-        Get.snackbar('Cancelled', 'No image was selected.');
+  /// Picks an image from gallery or camera and updates the local state.
+  /// The compression step has been removed.
+  Future<void> pickImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await showModalBottomSheet<XFile?>(
+        context: Get.context!,
+        builder: (BuildContext context) {
+          return SafeArea(
+            child: Wrap(
+              children: <Widget>[
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Photo Library'),
+                  onTap: () async {
+                    Navigator.pop(
+                      context,
+                      await picker.pickImage(source: ImageSource.gallery),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera),
+                  title: const Text('Camera'),
+                  onTap: () async {
+                    Navigator.pop(
+                      context,
+                      await picker.pickImage(source: ImageSource.camera),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      if (image != null) {
+        // Directly assign the picked file without compression
+        selectedImageFile.value = File(image.path);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to pick image: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to pick image: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
-  // Future<void>updateProfileImage()async{
-  //   try{
-  //     final response = await ApiServices.updateProfileWithImage(url: ApiEndpoints.baseImageUrl, fields: {
-  //       'image': selectedImageFile.value
-  //     })
-  //   }catch(e){
-  //     printError(info: '$e');
-  //   }
-  // }
+  // --- _compressImage method has been completely REMOVED ---
 
-  // --- NEW METHOD TO UPDATE PROFILE ---
-  Future<void> updateProfileData({
+  // --- UNIFIED PROFILE UPDATE METHOD (Unchanged) ---
+  Future<void> updateProfile({
     required String fullName,
     required String phone,
-    // You can also pass an image file here later
   }) async {
     isUpdating.value = true;
     try {
-      final body = {'fullName': fullName, 'phone': phone};
+      late final http.Response response;
+      final Map<String, String> textFields = {
+        'fullName': fullName,
+        'phone': phone,
+      };
 
-      // Use a PUT or PATCH request to send the updated data
-      final response = await ApiServices.patch(
-        url: ApiEndpoints.updateProfile,
-        body: body,
-      );
+      if (selectedImageFile.value != null) {
+        response = await ApiServices.patchWithFile(
+          url: ApiEndpoints.updateProfile,
+          body: textFields,
+          file: selectedImageFile.value!,
+          fileField: _kImageFieldName,
+        );
+      } else {
+        response = await ApiServices.patch(
+          url: ApiEndpoints.updateProfile,
+          body: textFields,
+        );
+      }
 
       final responseBody = jsonDecode(response.body);
 
       if (response.statusCode == 200 && responseBody['success'] == true) {
-        // Refresh data to show the latest info
+        selectedImageFile.value = null;
         await fetchProfileData();
-        Get.back(); // Go back to the previous screen
+
+        Get.back();
         Get.snackbar(
           'Success',
           'Profile updated successfully!',
@@ -114,6 +162,8 @@ class ProfileController extends GetxController {
         'Error',
         'An unexpected error occurred.',
         snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
       );
     } finally {
       isUpdating.value = false;
@@ -122,5 +172,6 @@ class ProfileController extends GetxController {
 
   void clearUserData() {
     userData.value = UserData();
+    selectedImageFile.value = null;
   }
 }

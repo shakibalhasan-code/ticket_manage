@@ -318,69 +318,76 @@ class ReportDetailsWithMessagesScreen extends StatelessWidget {
                     'Recent Messages',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
-                  Obx(
-                    () =>
-                        controller.isLoadingMessages.value &&
-                                controller
-                                    .messagesList
-                                    .isEmpty // Show indicator only when initially loading and list is empty
-                            ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                              ),
-                            )
-                            : IconButton(
-                              icon: const Icon(
-                                Icons.refresh,
-                                color: Colors.black54,
-                              ),
-                              tooltip: "Refresh messages",
-                              onPressed:
-                                  controller.isLoadingMessages.value
-                                      ? null
-                                      : // Disable if already loading
-                                      () => controller.fetchMessages(),
-                            ),
-                  ),
+                  // *** FIX: Improved refresh button logic to show a loader during any refresh action. ***
+                  Obx(() {
+                    // Always show a loader when loading messages, provides better UX.
+                    if (controller.isLoadingMessages.value) {
+                      return const Padding(
+                        padding: EdgeInsets.all(12.0),
+                        child: SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2.5),
+                        ),
+                      );
+                    } else {
+                      return IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.black54),
+                        tooltip: "Refresh messages",
+                        // Call the controller's fetchMessages method.
+                        onPressed: controller.fetchMessages,
+                      );
+                    }
+                  }),
                 ],
               ),
             ),
 
             // --- Expanded Message List Section ---
             Expanded(
-              child: Obx(() {
-                if (controller.isLoadingMessages.value &&
-                    controller.messagesList.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-                if (!controller.isLoadingMessages.value &&
-                    controller.messagesList.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20.0),
-                      child: Text('No messages yet. Start the conversation!'),
-                    ),
-                  );
-                }
+              // *** FIX: Added RefreshIndicator for pull-to-refresh functionality. ***
+              child: RefreshIndicator(
+                // onRefresh requires a Future, which fetchMessages provides.
+                onRefresh: controller.fetchMessages,
+                child: Obx(() {
+                  // Show "no messages" text only after the first load is complete.
+                  if (!controller.isLoadingMessages.value &&
+                      controller.messagesList.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20.0),
+                        // Use a CustomScrollView to allow RefreshIndicator to work on an empty screen.
+                        child: CustomScrollView(
+                          slivers: [
+                            SliverFillRemaining(
+                              child: Center(
+                                child: Text(
+                                  'No messages yet. Start the conversation!',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
 
-                //ListView.builder for messages
-                return ListView.builder(
-                  // *** FIX: Added ScrollController here ***
-                  controller: controller.messageScrollController,
-                  padding: const EdgeInsets.only(
-                    left: 12,
-                    right: 12,
-                    bottom: 10,
-                  ), // Adjusted padding
-                  itemCount: controller.messagesList.length,
-                  itemBuilder: (context, index) {
-                    final chatMsg = controller.messagesList[index];
-                    return _buildMessage(chatMsg, context);
-                  },
-                );
-              }),
+                  //ListView.builder for messages
+                  return ListView.builder(
+                    controller: controller.messageScrollController,
+                    padding: const EdgeInsets.only(
+                      left: 12,
+                      right: 12,
+                      bottom: 10,
+                    ), // Adjusted padding
+                    itemCount: controller.messagesList.length,
+                    itemBuilder: (context, index) {
+                      final chatMsg = controller.messagesList[index];
+                      return _buildMessage(chatMsg, context);
+                    },
+                  );
+                }),
+              ),
             ),
 
             // --- Message Input Field (Stays at the bottom) ---

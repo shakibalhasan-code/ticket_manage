@@ -1,6 +1,7 @@
 // lib/features/home/views/profile_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:workflowx/controllers/profile_controller.dart';
 import 'package:workflowx/core/constants/app_assets.dart';
@@ -156,13 +157,16 @@ class ProfileScreen extends StatelessWidget {
                 // not trigger a logout.
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const SvgIcon(assetName: AppAssets.iconPolicy),
+                  leading: SvgIcon(
+                    assetName: AppAssets.lock,
+                    height: 14.sp,
+                    width: 14.sp,
+                  ),
                   title: const Text(
                     'Change Password',
                     style: TextStyle(fontSize: 16, color: Colors.black),
                   ),
                   onTap: () {
-                    // TODO: Implement navigation to a Change Password screen
                     // Get.toNamed(Routes.changePassword);
                     print("Navigate to change password");
                   },

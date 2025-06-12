@@ -12,6 +12,7 @@ class AppAssets {
   static const String iconSend = 'assets/icons/send.svg';
   static const String iconTick = 'assets/icons/tick.svg';
   static const String iconUser = 'assets/icons/user.svg';
+  static const String lock = 'assets/icons/lock_icon.svg';
 
   // Logos
   static const String appLogo = 'assets/logo/app_logo.svg';

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io'; // Required for File related operations if you construct MultipartFile here
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
 import 'package:workflowx/core/config/app_constants.dart';
 import 'package:workflowx/core/helper/pref_helper.dart';
 import 'package:workflowx/core/utils/glob_widget.dart'; // Still used for one specific toast
@@ -276,38 +277,55 @@ class ApiServices {
     }
   }
 
-  static Future<http.Response> updateProfileWithImage({
+  static Future<http.Response> patchWithFile({
     required String url,
-    required Map<String, String> fields, // Text fields
-    File? imageFile, // Optional image file
-    String imageFieldKey = 'image', // Key for the image file in the form data
+    required Map<String, String> body, // Text fields
+    required String
+    fileField, // The API field name for the file (e.g., 'profileImage')
+    required File file, // The file to upload
   }) async {
-    final authToken = await PrefHelper.getString(AppConstants.token);
-    var request = http.MultipartRequest('PUT', Uri.parse(url)); // Or 'PATCH'
-
-    // Add headers
-    if (authToken != null) {
-      request.headers['Authorization'] = 'Bearer $authToken';
-    }
-    request.headers['Accept'] = 'application/json';
-
-    // Add text fields
-    request.fields.addAll(fields);
-
-    // Add image file if provided
-    if (imageFile != null) {
-      request.files.add(
-        await http.MultipartFile.fromPath(imageFieldKey, imageFile.path),
-      );
-    }
-
     try {
+      // Retrieve your token as you normally would
+      String? token = await PrefHelper.getString(AppConstants.token);
+      print('===========>>>>>>>>>>> $token');
+      // Create a multipart request
+      var request = http.MultipartRequest('PATCH', Uri.parse(url));
+
+      // Add headers
+      request.headers.addAll({
+        'Authorization': token ?? 'null',
+        'Content-Type': 'multipart/form-data',
+      });
+
+      // Add text fields
+      request.fields.addAll(body);
+
+      // Add the file
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          fileField,
+          file.path,
+          filename: path.basename(
+            file.path,
+          ), // Use path package to get filename
+        ),
+      );
+
+      // Send the request and get the streamed response
       final streamedResponse = await request.send();
+
+      // Convert the streamed response to a regular http.Response
       final response = await http.Response.fromStream(streamedResponse);
+
       return response;
     } catch (e) {
-      print('Error in updateProfileWithImage: $e');
-      throw Exception('Failed to update profile: $e');
+      // Handle potential network errors or exceptions during file processing
+      print('Error in patchWithFile: $e');
+      // Return a custom error response or rethrow the exception
+      return http.Response(
+        '{"success": false, "message": "Client-side error: $e"}',
+        500,
+      );
     }
   }
 

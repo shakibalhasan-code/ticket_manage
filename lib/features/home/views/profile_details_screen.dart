@@ -2,8 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:workflowx/controllers/profile_controller.dart';
 
 class ProfileDetailsScreen extends StatefulWidget {
@@ -14,56 +12,64 @@ class ProfileDetailsScreen extends StatefulWidget {
 }
 
 class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
-  // Find the already-existing ProfileController instance
   final ProfileController controller = Get.find<ProfileController>();
 
   late final TextEditingController _fullNameController;
   late final TextEditingController _emailController;
-  String _phoneNumber = '';
-  String _initialPhoneNumber = '';
+  late final TextEditingController _phoneController;
 
   @override
   void initState() {
     super.initState();
-
-    // Initialize controllers with data from the ProfileController
     final user = controller.userData.value;
     final profile = user.userProfile;
 
     _fullNameController = TextEditingController(text: profile?.fullName ?? '');
     _emailController = TextEditingController(text: user.email ?? '');
-
-    // Set initial values for the phone field from the controller
-    _initialPhoneNumber = profile?.phone ?? '';
-    _phoneNumber = _initialPhoneNumber;
+    _phoneController = TextEditingController(text: profile?.phone ?? '');
   }
 
   @override
   void dispose() {
-    // Clean up controllers when the widget is removed
     _fullNameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
   void _handleUpdate() {
     final fullName = _fullNameController.text.trim();
-
-    // Call the controller method to perform the API call
-    controller.updateProfileData(fullName: fullName, phone: _phoneNumber);
+    final phone = _phoneController.text.trim();
+    controller.updateProfile(fullName: fullName, phone: phone);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get the latest data from the controller using Obx for reactivity
     return Obx(() {
       final user = controller.userData.value;
       final profile = user.userProfile;
       final profileImageUrl = profile?.image;
+
       final String initials =
           (profile?.fullName?.isNotEmpty ?? false)
-              ? profile!.fullName![0].toUpperCase()
+              ? profile!.fullName!
+                  .split(' ')
+                  .map((e) => e[0])
+                  .take(2)
+                  .join()
+                  .toUpperCase()
+              : (user.email?.isNotEmpty ?? false)
+              ? user.email![0].toUpperCase()
               : 'U';
+
+      ImageProvider? backgroundImage;
+      final pickedFile = controller.selectedImageFile.value;
+
+      if (pickedFile != null) {
+        backgroundImage = FileImage(pickedFile);
+      } else if (profileImageUrl != null && profileImageUrl.isNotEmpty) {
+        backgroundImage = NetworkImage(profileImageUrl);
+      }
 
       return Scaffold(
         appBar: AppBar(
@@ -86,56 +92,42 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Obx(() {
-                      return CircleAvatar(
-                        radius: 60,
-                        backgroundImage:
-                            profileImageUrl != null &&
-                                    profileImageUrl.isNotEmpty
-                                ? NetworkImage(profileImageUrl)
-                                : controller.selectedImageFile.value != null
-                                ? FileImage(controller.selectedImageFile.value!)
-                                : null,
-                        backgroundColor: Colors.blue.shade100,
-                        // child:
-                        //     profileImageUrl == null || profileImageUrl.isEmpty
-                        //         ? Text(
-                        //           initials,
-                        //           style: const TextStyle(
-                        //             fontSize: 48,
-                        //             fontWeight: FontWeight.bold,
-                        //             color: Colors.blue,
-                        //           ),
-                        //         )
-                        //         : null,
-                      );
-                    }),
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundImage: backgroundImage,
+                      backgroundColor: Colors.blue.shade100,
+                      child:
+                          backgroundImage == null
+                              ? Text(
+                                initials,
+                                style: const TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              )
+                              : null,
+                    ),
                     Positioned(
                       bottom: -5,
                       right: -5,
                       child: GestureDetector(
-                        onTap: () {
-                          // TODO: Implement image picker logic here
-                          Get.snackbar(
-                            'Info',
-                            'Image picker not yet implemented.',
-                          );
-                        },
+                        // ***** THE FIX IS HERE *****
+                        // Call pickImage() without any arguments.
+                        // The method itself handles showing the Camera/Gallery choice.
+                        onTap: () => controller.pickImage(),
+                        // ***** END OF FIX *****
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.blue,
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(color: Colors.white, width: 2),
                           ),
-                          padding: const EdgeInsets.all(6),
-                          child: InkWell(
-                            onTap:
-                                () => controller.pickImage(ImageSource.gallery),
-                            child: Icon(
-                              Icons.edit,
-                              color: Colors.white,
-                              size: 20,
-                            ),
+                          padding: const EdgeInsets.all(8),
+                          child: const Icon(
+                            Icons.edit,
+                            color: Colors.white,
+                            size: 20,
                           ),
                         ),
                       ),
@@ -144,11 +136,14 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  profile?.fullName ?? 'User Name',
+                  _fullNameController.text.isNotEmpty
+                      ? _fullNameController.text
+                      : 'User Name',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 22,
                   ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -157,7 +152,6 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 ),
                 const SizedBox(height: 30),
 
-                // Full Name TextField
                 TextField(
                   controller: _fullNameController,
                   decoration: InputDecoration(
@@ -170,10 +164,10 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                       horizontal: 16,
                     ),
                   ),
+                  onChanged: (value) => setState(() {}),
                 ),
                 const SizedBox(height: 16),
 
-                // Email TextField (readonly)
                 TextField(
                   controller: _emailController,
                   readOnly: true,
@@ -183,6 +177,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                     filled: true,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       vertical: 16,
@@ -192,53 +187,52 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Phone number with intl_phone_field
-                IntlPhoneField(
-                  initialValue: _initialPhoneNumber,
+                TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
                   decoration: InputDecoration(
                     labelText: 'Phone Number',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
                   ),
-                  onChanged: (phone) {
-                    _phoneNumber = phone.completeNumber;
-                  },
                 ),
                 const SizedBox(height: 30),
 
                 SizedBox(
                   width: double.infinity,
                   height: 50,
-                  child: Obx(
-                    () => ElevatedButton(
-                      onPressed:
-                          controller.isUpdating.value ? null : _handleUpdate,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        disabledBackgroundColor: Colors.blue.withOpacity(0.5),
+                  child: ElevatedButton(
+                    onPressed:
+                        controller.isUpdating.value ? null : _handleUpdate,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child:
-                          controller.isUpdating.value
-                              ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 3,
-                                ),
-                              )
-                              : const Text(
-                                'Update',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.white,
-                                ),
-                              ),
+                      disabledBackgroundColor: Colors.blue.withOpacity(0.5),
                     ),
+                    child:
+                        controller.isUpdating.value
+                            ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 3,
+                              ),
+                            )
+                            : const Text(
+                              'Update Profile',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
+                            ),
                   ),
                 ),
               ],
