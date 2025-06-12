@@ -353,9 +353,7 @@ class ReportDetailsWithMessagesScreen extends StatelessWidget {
               child: Obx(() {
                 if (controller.isLoadingMessages.value &&
                     controller.messagesList.isEmpty) {
-                  // This loader is now less prominent as refresh has one too
-                  // return const Center(child: CircularProgressIndicator());
-                  return const SizedBox.shrink(); // Or a very subtle loader
+                  return const SizedBox.shrink();
                 }
                 if (!controller.isLoadingMessages.value &&
                     controller.messagesList.isEmpty) {
@@ -366,11 +364,11 @@ class ReportDetailsWithMessagesScreen extends StatelessWidget {
                     ),
                   );
                 }
+
                 //ListView.builder for messages
-                //IMPORTANT: You must add `messageScrollController` to your ReportDetailsController
-                // and pass it here.
-                // e.g., controller: controller.messageScrollController,
                 return ListView.builder(
+                  // *** FIX: Added ScrollController here ***
+                  controller: controller.messageScrollController,
                   padding: const EdgeInsets.only(
                     left: 12,
                     right: 12,

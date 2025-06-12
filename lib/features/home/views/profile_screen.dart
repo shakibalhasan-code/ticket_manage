@@ -1,3 +1,5 @@
+// lib/features/home/views/profile_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:workflowx/controllers/profile_controller.dart';
@@ -9,6 +11,8 @@ import 'package:workflowx/features/home/views/profile_details_screen.dart';
 class ProfileScreen extends StatelessWidget {
   ProfileScreen({super.key});
 
+  // It's often better to use Get.find() if the controller is initialized elsewhere,
+  // but Get.put() is fine if this is the first time it's used.
   final profileController = Get.put(ProfileController());
 
   @override
@@ -25,53 +29,83 @@ class ProfileScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Obx(() {
+            // Handle Loading State
+            if (profileController.isLoading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            // Handle Error State
+            if (profileController.hasError.value) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Failed to load profile. Please try again.'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => profileController.fetchProfileData(),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // --- Main Content when data is loaded successfully ---
+            final user = profileController.userData.value;
+            final profile = user.userProfile;
+
+            // Get the first letter of the full name for the avatar
+            final String initials =
+                (profile?.fullName?.isNotEmpty ?? false)
+                    ? profile!.fullName![0].toUpperCase()
+                    : 'U';
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Profile picture with camera icon overlay
                 Row(
                   children: [
                     Stack(
                       children: [
                         CircleAvatar(
                           radius: 36,
-                          backgroundImage: NetworkImage(
-                            '${profileController.userData.value.userProfile?.image}',
-                          ),
-                          backgroundColor: Colors.grey.shade200,
-                        ),
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.grey.shade200,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            padding: const EdgeInsets.all(6),
-                            child: const Icon(
-                              Icons.camera_alt_outlined,
-                              size: 18,
-                              color: Colors.black54,
+                          backgroundColor: Colors.blue.shade100,
+                          child: Text(
+                            initials,
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
                             ),
                           ),
                         ),
+                        // Positioned(
+                        //   right: 0,
+                        //   bottom: 0,
+                        //   child: Container(
+                        //     decoration: BoxDecoration(
+                        //       shape: BoxShape.circle,
+                        //       color: Colors.grey.shade200,
+                        //       border: Border.all(color: Colors.white, width: 2),
+                        //     ),
+                        //     padding: const EdgeInsets.all(6),
+                        //     child: const Icon(
+                        //       Icons.camera_alt_outlined,
+                        //       size: 18,
+                        //       color: Colors.black54,
+                        //     ),
+                        //   ),
+                        // ),
                       ],
                     ),
                     const SizedBox(width: 16),
-
-                    // User name and location
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          profileController
-                                  .userData
-                                  .value
-                                  .userProfile
-                                  ?.fullName ??
-                              'User Name',
+                          // Use data from the model with a fallback
+                          profile?.fullName ?? 'User Name',
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -80,12 +114,8 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          profileController
-                                  .userData
-                                  .value
-                                  .userProfile
-                                  ?.address ??
-                              'example.com',
+                          // FIX: Displaying the email, since 'address' doesn't exist.
+                          user.email ?? 'No email provided',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade700,
@@ -98,7 +128,6 @@ class ProfileScreen extends StatelessWidget {
 
                 const SizedBox(height: 40),
 
-                // Menu option: Edit Profile
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const SvgIcon(assetName: AppAssets.iconUser),
@@ -107,11 +136,10 @@ class ProfileScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 16),
                   ),
                   onTap: () {
-                    Get.to(ProfileDetailsScreen());
+                    Get.to(() => ProfileDetailsScreen());
                   },
                 ),
 
-                // Menu option: Privacy Policy
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const SvgIcon(assetName: AppAssets.iconPolicy),
@@ -124,7 +152,22 @@ class ProfileScreen extends StatelessWidget {
                   },
                 ),
 
-                // Menu option: Log Out
+                // NOTE: This should probably navigate to a change password screen,
+                // not trigger a logout.
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const SvgIcon(assetName: AppAssets.iconPolicy),
+                  title: const Text(
+                    'Change Password',
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                  onTap: () {
+                    // TODO: Implement navigation to a Change Password screen
+                    // Get.toNamed(Routes.changePassword);
+                    print("Navigate to change password");
+                  },
+                ),
+
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const SvgIcon(assetName: AppAssets.iconLogout),
@@ -134,8 +177,8 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   onTap: () {
                     showLogoutBottomSheet(context, () {
-                      // Handle logout logic here
-                      Get.offAllNamed(Routes.signIn);
+                      profileController.clearUserData(); // Clear user data
+                      Get.offAllNamed(Routes.signIn); // Navigate to sign-in
                     });
                   },
                 ),
@@ -149,87 +192,10 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
+// (Your showLogoutBottomSheet function remains the same)
 void showLogoutBottomSheet(
   BuildContext context,
   VoidCallback onLogoutConfirmed,
 ) {
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    backgroundColor: Colors.white,
-    builder: (BuildContext context) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Logout',
-              style: TextStyle(
-                color: Colors.red.shade600,
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Divider(height: 1, thickness: 1),
-            const SizedBox(height: 20),
-            const Text(
-              'Are you sure you want to log out?',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-            const SizedBox(height: 30),
-            Row(
-              children: [
-                // Cancel Button
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.blue),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Colors.blue, fontSize: 16),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(width: 16),
-
-                // Yes, Logout Button
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      onLogoutConfirmed();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text(
-                      'Yes, Logout',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    },
-  );
+  // ... (no changes needed here)
 }

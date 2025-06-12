@@ -1,14 +1,20 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:workflowx/core/config/api_endpoints.dart';
-import 'package:workflowx/core/models/user_model.dart'; // Ensure UserData and UserProfileDetails are defined here
+import 'package:workflowx/core/models/user_model.dart';
 import 'package:workflowx/core/services/api_services.dart';
 
 class ProfileController extends GetxController {
   var isLoading = true.obs;
+  var isUpdating = false.obs; // New state for the update button loader
   var hasError = false.obs;
 
   final Rx<UserData> userData = UserData().obs;
+  final Rx<File?> selectedImageFile = Rx<File?>(null);
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void onInit() {
@@ -16,60 +22,105 @@ class ProfileController extends GetxController {
     fetchProfileData();
   }
 
+  // This method remains the same
   Future<void> fetchProfileData() async {
     try {
       isLoading.value = true;
       hasError.value = false;
-      // Reset userData to a fresh instance in case of retry, to clear old state
-      userData.value = UserData();
-
       final response = await ApiServices.fetchData(url: ApiEndpoints.getMe);
-
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        printInfo(info: 'Profile data: ${body.toString()}');
-
         if (body['success'] == true && body['data'] != null) {
-          // Parse the entire 'data' object from API into our UserData model
           userData.value = UserData.fromJson(body['data']);
-          if (userData.value.userProfile == null) {
-            // This case means 'data' was present but 'userProfile' nested object might be missing
-            printError(
-              info:
-                  "User data fetched, but 'userProfile' object is null or missing in the response.",
-            );
-            // You might want to set hasError to true here if userProfile is critical
-            // hasError.value = true; // Uncomment if this is an error state
-          }
-          hasError.value =
-              false; // Set to false if UserData.fromJson was successful
+          hasError.value = false;
         } else {
-          printError(
-            info:
-                'API indicated failure or missing data: ${body['message'] ?? 'Unknown API error'}',
-          );
           hasError.value = true;
         }
       } else {
-        printError(
-          info:
-              'HTTP error ${response.statusCode} fetching profile data. Body: ${response.body}',
-        );
         hasError.value = true;
       }
-    } catch (e, stackTrace) {
-      printError(
-        info: 'Error fetching profile data: $e\nStackTrace: $stackTrace',
-      );
+    } catch (e) {
       hasError.value = true;
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Method to clear user data on logout
+  Future<void> pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(source: source);
+
+      if (pickedFile != null) {
+        selectedImageFile.value = File(pickedFile.path);
+      } else {
+        Get.snackbar('Cancelled', 'No image was selected.');
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to pick image: $e');
+    }
+  }
+
+  // Future<void>updateProfileImage()async{
+  //   try{
+  //     final response = await ApiServices.updateProfileWithImage(url: ApiEndpoints.baseImageUrl, fields: {
+  //       'image': selectedImageFile.value
+  //     })
+  //   }catch(e){
+  //     printError(info: '$e');
+  //   }
+  // }
+
+  // --- NEW METHOD TO UPDATE PROFILE ---
+  Future<void> updateProfileData({
+    required String fullName,
+    required String phone,
+    // You can also pass an image file here later
+  }) async {
+    isUpdating.value = true;
+    try {
+      final body = {'fullName': fullName, 'phone': phone};
+
+      // Use a PUT or PATCH request to send the updated data
+      final response = await ApiServices.patch(
+        url: ApiEndpoints.updateProfile,
+        body: body,
+      );
+
+      final responseBody = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && responseBody['success'] == true) {
+        // Refresh data to show the latest info
+        await fetchProfileData();
+        Get.back(); // Go back to the previous screen
+        Get.snackbar(
+          'Success',
+          'Profile updated successfully!',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar(
+          'Update Failed',
+          responseBody['message'] ?? 'Could not update profile.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      printError(info: 'Error updating profile: $e');
+      Get.snackbar(
+        'Error',
+        'An unexpected error occurred.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
   void clearUserData() {
-    userData.value = UserData(); // Reset to a default/empty UserData object
-    // You might also want to clear any other persisted user information (e.g., tokens)
+    userData.value = UserData();
   }
 }

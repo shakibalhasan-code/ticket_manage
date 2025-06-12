@@ -211,52 +211,51 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }),
 
-              const SizedBox(height: 16), // Increased spacing
-              // Drone cards horizontal scroll - Products
-              Obx(() {
-                if (homeController.isLoadingProducts.value) {
-                  return const SizedBox(
-                    height: 290, // Adjusted to match DroneCard height + margin
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (homeController.productsList.isEmpty) {
-                  return SizedBox(
-                    height: 290,
-                    child: Center(
-                      child: Text(
-                        homeController.selectedFilter.isNotEmpty ||
-                                homeController.searchController.text.isNotEmpty
-                            ? 'No drones match your criteria.'
-                            : 'No drones available.',
-                      ),
-                    ),
-                  );
-                }
-                return SizedBox(
-                  height: 290,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: homeController.productsList.length,
-                    itemBuilder: (context, index) {
-                      final Product product =
-                          homeController.productsList[index];
-                      return DroneCard(
-                        // Ensure your API provides a full URL or prepend a base URL
-                        imageUrl:
-                            '${ApiEndpoints.baseImageUrl}/${product.image}' ??
-                            'https://via.placeholder.com/160x120.png?text=No+Image',
-                        title: product.model ?? 'N/A',
-                        description:
-                            product.description ?? 'No description available.',
-                        onReport:
-                            () => Get.to(FileReportScreen(product: product)),
-                      );
-                    },
-                  ),
-                );
-              }),
-
+              // const SizedBox(height: 16), // Increased spacing
+              // // Drone cards horizontal scroll - Products
+              // Obx(() {
+              //   if (homeController.isLoadingProducts.value) {
+              //     return const SizedBox(
+              //       height: 290, // Adjusted to match DroneCard height + margin
+              //       child: Center(child: CircularProgressIndicator()),
+              //     );
+              //   }
+              //   if (homeController.productsList.isEmpty) {
+              //     return SizedBox(
+              //       height: 290,
+              //       child: Center(
+              //         child: Text(
+              //           homeController.selectedFilter.isNotEmpty ||
+              //                   homeController.searchController.text.isNotEmpty
+              //               ? 'No drones match your criteria.'
+              //               : 'No drones available.',
+              //         ),
+              //       ),
+              //     );
+              //   }
+              //   return SizedBox(
+              //     height: 290,
+              //     child: ListView.builder(
+              //       scrollDirection: Axis.horizontal,
+              //       itemCount: homeController.productsList.length,
+              //       itemBuilder: (context, index) {
+              //         final Product product =
+              //             homeController.productsList[index];
+              //         return DroneCard(
+              //           // Ensure your API provides a full URL or prepend a base URL
+              //           imageUrl:
+              //               '${ApiEndpoints.baseImageUrl}/${product.image}' ??
+              //               'https://via.placeholder.com/160x120.png?text=No+Image',
+              //           title: product.model ?? 'N/A',
+              //           description:
+              //               product.description ?? 'No description available.',
+              //           onReport:
+              //               () => Get.to(FileReportScreen(product: product)),
+              //         );
+              //       },
+              //     ),
+              //   );
+              // }),
               const SizedBox(height: 16), // Increased spacing
               // Recent Report Ticket header
               Row(

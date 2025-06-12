@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart'; // For parsing dates
 import 'package:workflowx/core/config/api_endpoints.dart';
 import 'package:workflowx/core/config/app_constants.dart';
 import 'package:workflowx/core/helper/pref_helper.dart';
@@ -16,10 +15,9 @@ class ReportDetailsController extends GetxController {
   var messagesList = <ChatMessage>[].obs;
   var isLoadingMessages = true.obs;
   var isSendingMessage = false.obs;
-  final TextEditingController messageInputController =
-      TextEditingController(); // Renamed for clarity
-  final ScrollController scrollController =
-      ScrollController(); // For auto-scrolling
+  final TextEditingController messageInputController = TextEditingController();
+  // Renamed for clarity to match the UI comment
+  final ScrollController messageScrollController = ScrollController();
 
   String? currentUserId;
 
@@ -38,17 +36,24 @@ class ReportDetailsController extends GetxController {
     }
 
     fetchMessages();
-    messagesList.listen(
-      (_) => _scrollToBottom(),
-    ); // Listen to list changes to scroll
+    // Listen to list changes to scroll to the bottom
+    messagesList.listen((_) => _scrollToBottom());
+  }
+
+  @override
+  void onClose() {
+    // Dispose controllers to prevent memory leaks
+    messageInputController.dispose();
+    messageScrollController.dispose();
+    super.onClose();
   }
 
   void _scrollToBottom() {
-    if (scrollController.hasClients) {
+    if (messageScrollController.hasClients) {
       // Delay slightly to allow the UI to build before scrolling
       Future.delayed(const Duration(milliseconds: 100), () {
-        scrollController.animateTo(
-          scrollController.position.maxScrollExtent,
+        messageScrollController.animateTo(
+          messageScrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
@@ -68,7 +73,6 @@ class ReportDetailsController extends GetxController {
     }
     try {
       isLoadingMessages.value = true;
-      messagesList.clear();
 
       final response = await ApiServices.fetchData(
         url: ApiEndpoints.getTicketMessages(report.sId!),
@@ -79,16 +83,24 @@ class ReportDetailsController extends GetxController {
         if (decodedResponse['success'] == true &&
             decodedResponse['data'] is List) {
           final List<dynamic> messagesData = decodedResponse['data'];
+
+          // Clear the list before adding new data
+          messagesList.clear();
+
           if (messagesData.isNotEmpty) {
-            messagesList.value =
+            final parsedMessages =
                 messagesData.map((item) {
                   final msg = ChatMessage.fromJson(
                     item as Map<String, dynamic>,
                   );
+                  // A message is from "support" if the sender is NOT the user who created the report
                   msg.isSupportMessage = msg.senderId != report.user;
                   return msg;
                 }).toList();
-            messagesList.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+            // Sort by creation date to ensure correct order
+            parsedMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            messagesList.assignAll(parsedMessages);
           } else {
             print('No messages found for this ticket.');
           }
@@ -136,15 +148,11 @@ class ReportDetailsController extends GetxController {
         'Cannot send message: User not identified.',
         snackPosition: SnackPosition.BOTTOM,
       );
-      // Potentially log out user or show critical error
       return;
     }
 
     isSendingMessage.value = true;
     try {
-      // Construct the payload. The backend should know the sender from the auth token.
-      // If it doesn't, you'd need to include `senderId: _currentUserId` here,
-      // but the ChatMessage model's toJsonForSend does not include it by default.
       final messageToSend = {'messages': text};
 
       final response = await ApiServices.post(
@@ -159,8 +167,12 @@ class ReportDetailsController extends GetxController {
           final newMessage = ChatMessage.fromJson(newMessageData);
           newMessage.isSupportMessage = newMessage.senderId != report.user;
 
+          // *** FIX: Optimistic UI update. Add the message directly. ***
           messagesList.add(newMessage);
-          await fetchMessages();
+
+          // *** FIX: DO NOT refetch the list. It causes a race condition. ***
+          // await fetchMessages(); // <-- REMOVED THIS LINE
+
           messageInputController.clear();
         } else {
           Get.snackbar(

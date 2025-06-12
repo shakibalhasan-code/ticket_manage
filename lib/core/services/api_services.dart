@@ -281,11 +281,11 @@ class ApiServices {
     required Map<String, String> fields, // Text fields
     File? imageFile, // Optional image file
     String imageFieldKey = 'image', // Key for the image file in the form data
-    String? authToken, // If auth is needed
   }) async {
-    var request = http.MultipartRequest('PUT', Uri.parse(url)); // Or 'POST'
+    final authToken = await PrefHelper.getString(AppConstants.token);
+    var request = http.MultipartRequest('PUT', Uri.parse(url)); // Or 'PATCH'
 
-    // Add headers (e.g., Authorization)
+    // Add headers
     if (authToken != null) {
       request.headers['Authorization'] = 'Bearer $authToken';
     }
@@ -307,7 +307,6 @@ class ApiServices {
       return response;
     } catch (e) {
       print('Error in updateProfileWithImage: $e');
-      // Rethrow or return a custom error response
       throw Exception('Failed to update profile: $e');
     }
   }

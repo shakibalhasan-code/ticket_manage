@@ -31,7 +31,7 @@ class MainHomeController extends GetxController {
   }
 
   void fetchInitialData() {
-    getAllProducts();
+    // getAllProducts();
     getAllBrand();
     getMyTickets();
   }
