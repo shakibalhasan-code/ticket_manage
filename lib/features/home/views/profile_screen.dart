@@ -63,7 +63,7 @@ class ProfileScreen extends StatelessWidget {
                 (profile?.fullName?.isNotEmpty ?? false)
                     ? profile!.fullName![0].toUpperCase()
                     : 'U';
-            final profileImage = profile!.image!;
+            final profileImage = profile?.image;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
