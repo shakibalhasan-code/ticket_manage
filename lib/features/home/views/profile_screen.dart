@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:workflowx/controllers/profile_controller.dart';
+import 'package:workflowx/core/config/api_endpoints.dart';
 import 'package:workflowx/core/constants/app_assets.dart';
 import 'package:workflowx/core/routes/app_pages.dart';
 import 'package:workflowx/core/utils/svg_icon.dart';
+import 'package:workflowx/features/home/views/change_pass_screen.dart';
 import 'package:workflowx/features/home/views/profile_details_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -61,6 +63,7 @@ class ProfileScreen extends StatelessWidget {
                 (profile?.fullName?.isNotEmpty ?? false)
                     ? profile!.fullName![0].toUpperCase()
                     : 'U';
+            final profileImage = profile!.image!;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,14 +75,35 @@ class ProfileScreen extends StatelessWidget {
                         CircleAvatar(
                           radius: 36,
                           backgroundColor: Colors.blue.shade100,
-                          child: Text(
-                            initials,
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
+                          child:
+                              profile?.image == null
+                                  ? Text(initials)
+                                  : ClipOval(
+                                    child: Image.network(
+                                      '${ApiEndpoints.baseImageUrl}$profileImage',
+                                      width: 72, // diameter = 2 * radius
+                                      height: 72, // diameter = 2 * radius
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (
+                                        context,
+                                        error,
+                                        stackTrace,
+                                      ) {
+                                        return Center(child: Text(initials));
+                                      },
+                                      loadingBuilder: (
+                                        context,
+                                        child,
+                                        loadingProgress,
+                                      ) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
+                                        );
+                                      },
+                                    ),
+                                  ),
                         ),
                         // Positioned(
                         //   right: 0,
@@ -159,16 +183,15 @@ class ProfileScreen extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   leading: SvgIcon(
                     assetName: AppAssets.lock,
-                    height: 14.sp,
-                    width: 14.sp,
+                    height: 20.sp,
+                    width: 20.sp,
                   ),
                   title: const Text(
                     'Change Password',
                     style: TextStyle(fontSize: 16, color: Colors.black),
                   ),
                   onTap: () {
-                    // Get.toNamed(Routes.changePassword);
-                    print("Navigate to change password");
+                    Get.to(ChangePassScreen());
                   },
                 ),
 

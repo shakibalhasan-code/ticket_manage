@@ -8,6 +8,7 @@ import 'package:workflowx/core/models/product_model.dart';
 import 'package:workflowx/core/routes/app_pages.dart';
 import 'package:workflowx/features/home/views/file_report_screen.dart';
 import 'package:workflowx/features/home/views/report_preview_reply_screen.dart';
+import 'package:workflowx/features/home/views/search_screen.dart';
 
 import '../widget/drone_card.dart';
 import '../widget/report_ticket_card.dart';
@@ -70,17 +71,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Icon(Icons.search, color: Colors.grey),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: TextField(
-                        controller: homeController.searchController,
-                        decoration: const InputDecoration(
-                          hintText: 'Search Drone',
-                          border: InputBorder.none,
-                        ),
-                        onSubmitted: (value) {
-                          homeController.searchAndFilterProducts(
-                            searchTerm: value,
-                          );
+                      child: InkWell(
+                        onTap: () {
+                          Get.to(SearchScreen());
                         },
+                        child: TextField(
+                          controller: homeController.searchController,
+                          decoration: const InputDecoration(
+                            hintText: 'Search Drone',
+                            border: InputBorder.none,
+                            enabled: false,
+                          ),
+                          onSubmitted: (value) {
+                            homeController.searchAndFilterProducts(
+                              searchTerm: value,
+                            );
+                          },
+                        ),
                       ),
                     ),
                     // IconButton(

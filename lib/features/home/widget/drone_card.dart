@@ -2,6 +2,8 @@
 // Reusable Drone Card Widget
 // ------------------------------
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 
 class DroneCard extends StatelessWidget {
   final String imageUrl;
@@ -20,8 +22,8 @@ class DroneCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 16, bottom: 16),
+      width: Get.width,
+      margin: const EdgeInsets.only(right: 0, bottom: 16),
       decoration: BoxDecoration(
         color: Colors.blue[50],
         borderRadius: BorderRadius.circular(16),
@@ -35,7 +37,7 @@ class DroneCard extends StatelessWidget {
             child: Image.network(
               imageUrl,
               height: 120,
-              width: 160,
+              width: Get.width,
               fit: BoxFit.cover,
             ),
           ),

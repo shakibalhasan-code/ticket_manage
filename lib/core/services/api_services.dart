@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io'; // Required for File related operations if you construct MultipartFile here
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
+import 'package:mime/mime.dart';
+import 'package:http_parser/http_parser.dart'; //
 import 'package:workflowx/core/config/app_constants.dart';
 import 'package:workflowx/core/helper/pref_helper.dart';
 import 'package:workflowx/core/utils/glob_widget.dart'; // Still used for one specific toast
@@ -279,49 +281,56 @@ class ApiServices {
 
   static Future<http.Response> patchWithFile({
     required String url,
-    required Map<String, String> body, // Text fields
     required String
-    fileField, // The API field name for the file (e.g., 'profileImage')
+    fileField, // The API field name for the file (e.g., 'image')
     required File file, // The file to upload
   }) async {
     try {
-      // Retrieve your token as you normally would
       String? token = await PrefHelper.getString(AppConstants.token);
-      print('===========>>>>>>>>>>> $token');
-      // Create a multipart request
+      if (token == null) {
+        // Handle case where token is not available
+        return http.Response(
+          '{"success": false, "message": "Authentication token not found."}',
+          401,
+        );
+      }
+
       var request = http.MultipartRequest('PATCH', Uri.parse(url));
 
       // Add headers
       request.headers.addAll({
-        'Authorization': token ?? 'null',
-        'Content-Type': 'multipart/form-data',
+        'Authorization': 'Bearer $token',
+        // 'Content-Type': 'multipart/form-data' is added automatically by MultipartRequest
       });
 
-      // Add text fields
-      request.fields.addAll(body);
+      // ***** THE FIX IS HERE *****
 
-      // Add the file
+      // 1. Determine the MIME type of the file.
+      final String? mimeType = lookupMimeType(file.path);
+      // Fallback to a generic stream if type cannot be determined.
+      final MediaType contentType = MediaType.parse(
+        mimeType ?? 'application/octet-stream',
+      );
+
+      // 2. Add the file to the request WITH the correct content type.
       request.files.add(
         await http.MultipartFile.fromPath(
           fileField,
           file.path,
-          filename: path.basename(
-            file.path,
-          ), // Use path package to get filename
+          filename: path.basename(file.path),
+          contentType: contentType, // <-- MODIFIED: Add the content type here
         ),
       );
 
-      // Send the request and get the streamed response
-      final streamedResponse = await request.send();
+      // ***** END OF FIX *****
 
-      // Convert the streamed response to a regular http.Response
+      final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
+      _handleResponseMessages(response); // Assuming you have this helper
       return response;
     } catch (e) {
-      // Handle potential network errors or exceptions during file processing
       print('Error in patchWithFile: $e');
-      // Return a custom error response or rethrow the exception
       return http.Response(
         '{"success": false, "message": "Client-side error: $e"}',
         500,
@@ -329,18 +338,18 @@ class ApiServices {
     }
   }
 
-  // REMOVED _handleResponseMessages function
-  // static void _handleResponseMessages(http.Response response) {
-  //   try {
-  //     final responseBody = jsonDecode(response.body);
-  //     if (responseBody is Map && responseBody.containsKey('message')) {
-  //       bool isError = response.statusCode >= 400;
-  //       GlobalBase.showToast(responseBody['message'], isError);
-  //     }
-  //   } catch (e) {
-  //     print(
-  //       'Could not parse message from response or message key missing: ${response.body}',
-  //     );
-  //   }
-  // }
+  /// REMOVED _handleResponseMessages function
+  static void _handleResponseMessages(http.Response response) {
+    try {
+      final responseBody = jsonDecode(response.body);
+      if (responseBody is Map && responseBody.containsKey('message')) {
+        bool isError = response.statusCode >= 400;
+        GlobalBase.showToast(responseBody['message'], isError);
+      }
+    } catch (e) {
+      print(
+        'Could not parse message from response or message key missing: ${response.body}',
+      );
+    }
+  }
 }

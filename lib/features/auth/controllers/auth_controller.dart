@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:workflowx/core/config/api_endpoints.dart';
@@ -18,9 +19,17 @@ class AuthController extends GetxController {
   final TextEditingController confirmPassContoller = TextEditingController();
   final TextEditingController fullNameController = TextEditingController();
 
+  final TextEditingController oldPasswordController = TextEditingController();
+  final TextEditingController confirmPassController = TextEditingController();
+
   var isLoading = false.obs;
   var isPasswordVisible = false.obs;
   var agreeToPrivacyPolicy = false.obs;
+
+  // --- State for Change Password Screen ---
+  var isOldPasswordObscured = true.obs;
+  var isNewPasswordObscured = true.obs;
+  var isConfirmPasswordObscured = true.obs;
 
   /// Stores email for password reset flow
   var emailForPasswordReset = ''.obs;
@@ -272,5 +281,58 @@ class AuthController extends GetxController {
 
   void toggleAgreeToPrivacyPolicy() {
     agreeToPrivacyPolicy.value = !agreeToPrivacyPolicy.value;
+  }
+
+  /// Handles the logic for the "Update Password" button press on the profile/settings page.
+  Future<void> updatePassword(GlobalKey<FormState> formKey) async {
+    // 1. Validate the form
+    if (!formKey.currentState!.validate()) {
+      return; // If form is not valid, do nothing.
+    }
+
+    try {
+      isLoading.value = true;
+
+      // 2. Prepare the request body from the controllers
+      final body = {
+        "old_password": oldPasswordController.text,
+        "new_password": newPasswordController.text,
+        "confirm_password": confirmPassController.text,
+      };
+
+      // 3. Make the API call
+      // Using a mock service here, replace with your actual ApiServices.post
+      await ApiServices.patch(url: ApiEndpoints.updatePassword, body: body);
+
+      // 4. Handle success
+      Get.snackbar(
+        'Success',
+        'Your password has been changed successfully!',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+
+      // 5. Clear fields and reset form state
+      formKey.currentState?.reset();
+      oldPasswordController.clear();
+      newPasswordController.clear();
+      confirmPassController.clear();
+    } catch (e) {
+      // 6. Handle errors
+      Get.snackbar(
+        'Error',
+        'Failed to change password. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+      printError(info: 'Error during password change: $e');
+    } finally {
+      // 7. Ensure loading indicator is turned off
+      isLoading.value = false;
+    }
   }
 }

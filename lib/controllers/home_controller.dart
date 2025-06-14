@@ -1,5 +1,3 @@
-// file: lib/features/home/controller/home_controller.dart
-// (Adjust path as per your project structure)
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
@@ -31,7 +29,7 @@ class MainHomeController extends GetxController {
   }
 
   void fetchInitialData() {
-    // getAllProducts();
+    getAllProducts();
     getAllBrand();
     getMyTickets();
   }
