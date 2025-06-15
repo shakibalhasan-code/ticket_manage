@@ -1,52 +1,69 @@
-// report_details_controller.dart (or a separate chat_message_model.dart)
-
-import 'package:intl/intl.dart'; // For parsing dates
+// core/models/message_model.dart
 
 class ChatMessage {
   final String id;
-  final String roomId; // This is your ticketId
-  final String senderId; // ID of the user/admin who sent the message
-  final String messageContent; // Content of the message
+  final String roomId;
+  final String senderId;
+  final String? senderName; // Added to store the sender's name if available
+  final String messageContent;
   final DateTime createdAt;
   final bool isDeleted;
 
-  // Helper to determine if the message is from the support/admin side
-  // This will be set in the controller after fetching current user's ID and ticket owner's ID
-  bool isSupportMessage;
+  // This is a transient field set by the controller
+  // True if the message is from the currently logged-in user
+  bool isMyMessage;
 
   ChatMessage({
     required this.id,
     required this.roomId,
     required this.senderId,
+    this.senderName, // Now part of the constructor
     required this.messageContent,
     required this.createdAt,
     this.isDeleted = false,
-    this.isSupportMessage =
-        false, // Default to false, will be set by controller
+    this.isMyMessage = false,
   });
 
+  // --- FIX: This factory is now robust and will not crash ---
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    String parsedSenderId;
+    String? parsedSenderName;
+
+    // Check if 'sender' is a populated object or a simple String ID
+    if (json['sender'] is Map<String, dynamic>) {
+      // It's a populated object, extract the ID and name
+      parsedSenderId = json['sender']['_id'] ?? '';
+      parsedSenderName =
+          json['sender']['name']; // Or 'fullName', 'username', etc.
+    } else {
+      // It's just a String ID
+      parsedSenderId = json['sender'] ?? '';
+      parsedSenderName = null; // No name available
+    }
+
     return ChatMessage(
-      id:
-          json['_id'] as String? ??
-          DateTime.now().millisecondsSinceEpoch.toString(), // Fallback ID
-      roomId: json['roomId'] as String? ?? '',
-      senderId: json['sender'] as String? ?? '', // API uses 'sender'
-      messageContent:
-          json['messages'] as String? ?? '', // API uses 'messages' for content
-      createdAt:
-          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
-          DateTime.now(),
-      isDeleted: json['isDeleted'] as bool? ?? false,
+      id: json['_id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      roomId:
+          json['report'] ??
+          json['roomId'] ??
+          '', // Handles both 'report' and 'roomId' keys
+      senderId: parsedSenderId,
+      senderName: parsedSenderName,
+      messageContent: json['messages'] ?? '', // API uses 'messages'
+      createdAt: _parseDateTime(json['createdAt']),
+      isDeleted: json['isDeleted'] ?? false,
     );
   }
 
-  // For sending a message, you might not need all fields
-  Map<String, dynamic> toJsonForSend(String currentUserId) {
-    return {
-      'roomId': roomId, // or ticketId
-      'sender': currentUserId, // The ID of the person sending
-      'messages': messageContent,
-    };
+  // Helper function to safely parse DateTime from JSON
+  static DateTime _parseDateTime(dynamic dateValue) {
+    if (dateValue == null) {
+      return DateTime.now(); // Fallback to current time
+    }
+    if (dateValue is String) {
+      return DateTime.tryParse(dateValue) ?? DateTime.now();
+    }
+    // You could add more checks here if needed (e.g., for integer timestamps)
+    return DateTime.now();
   }
 }

@@ -43,4 +43,6 @@ class ApiEndpoints {
   static String updateUserProfile = '$baseUrl/user/update-profile-data';
 
   static String updateUserProfileImage = '$baseUrl/user/update-profile-image';
+
+  static String getApplicator = '$baseUrl/distributor';
 }

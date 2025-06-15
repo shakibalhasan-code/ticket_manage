@@ -154,115 +154,121 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Drone categories list (horizontal) - Brands
+              // // Drone categories list (horizontal) - Brands
+              // Obx(() {
+              //   if (homeController.isLoadingBrands.value) {
+              //     return const SizedBox(
+              //       height: 100,
+              //       child: Center(child: CircularProgressIndicator()),
+              //     );
+              //   }
+              //   if (homeController.brandsList.isEmpty) {
+              //     return const SizedBox(
+              //       height: 100,
+              //       child: Center(child: Text('No categories found.')),
+              //     );
+              //   }
+              //   return SizedBox(
+              //     height: 100,
+              //     child: ListView.builder(
+              //       scrollDirection: Axis.horizontal,
+              //       itemCount: homeController.brandsList.length,
+              //       itemBuilder: (context, index) {
+              //         final Brand brand = homeController.brandsList[index];
+              //         return Container(
+              //           width: 80, // Increased width for better text display
+              //           margin: EdgeInsets.only(
+              //             right:
+              //                 index == homeController.brandsList.length - 1
+              //                     ? 0
+              //                     : 16,
+              //           ),
+              //           child: Column(
+              //             mainAxisAlignment: MainAxisAlignment.center,
+              //             children: [
+              //               CircleAvatar(
+              //                 radius: 28,
+              //                 backgroundImage:
+              //                     (brand.image != null &&
+              //                             brand.image!.isNotEmpty)
+              //                         ? NetworkImage(
+              //                           ('${ApiEndpoints.baseImageUrl}/${brand.image}'),
+              //                         )
+              //                         // Use a placeholder if no image or AppAssets.logo is not suitable
+              //                         : const AssetImage(AppAssets.logo)
+              //                             as ImageProvider,
+              //                 backgroundColor: Colors.grey.shade200,
+              //                 onBackgroundImageError: (_, __) {
+              //                   // This is to handle if NetworkImage fails
+              //                 },
+              //               ),
+              //               const SizedBox(height: 8),
+              //               Text(
+              //                 brand.name ?? 'N/A',
+              //                 style: const TextStyle(fontSize: 12),
+              //                 textAlign: TextAlign.center,
+              //                 maxLines: 2,
+              //                 overflow: TextOverflow.ellipsis,
+              //               ),
+              //             ],
+              //           ),
+              //         );
+              //       },
+              //     ),
+              //   );
+              // }),
+
+              // const SizedBox(height: 16), // Increased spacing
+              // Drone cards horizontal scroll - Products
               Obx(() {
-                if (homeController.isLoadingBrands.value) {
+                if (homeController.isLoadingProducts.value) {
                   return const SizedBox(
-                    height: 100,
+                    height: 240, // Match the new list height
                     child: Center(child: CircularProgressIndicator()),
                   );
                 }
-                if (homeController.brandsList.isEmpty) {
-                  return const SizedBox(
-                    height: 100,
-                    child: Center(child: Text('No categories found.')),
+                if (homeController.productsList.isEmpty) {
+                  return SizedBox(
+                    height: 240,
+                    child: Center(child: Text('Empty')),
                   );
                 }
                 return SizedBox(
-                  height: 100,
+                  // ------------------- CHANGE IS HERE -------------------
+                  height: 240, // Reduced height for a more compact list
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: homeController.brandsList.length,
+                    // Add a clip behavior to prevent shadows from being cut off
+                    clipBehavior: Clip.none,
+                    itemCount: homeController.productsList.length,
                     itemBuilder: (context, index) {
-                      final Brand brand = homeController.brandsList[index];
+                      final Product product =
+                          homeController.productsList[index];
                       return Container(
-                        width: 80, // Increased width for better text display
+                        width: 185, // Reduced width for a smaller card
                         margin: EdgeInsets.only(
                           right:
-                              index == homeController.brandsList.length - 1
+                              index == homeController.productsList.length - 1
                                   ? 0
                                   : 16,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircleAvatar(
-                              radius: 28,
-                              backgroundImage:
-                                  (brand.image != null &&
-                                          brand.image!.isNotEmpty)
-                                      ? NetworkImage(
-                                        ('${ApiEndpoints.baseImageUrl}/${brand.image}'),
-                                      )
-                                      // Use a placeholder if no image or AppAssets.logo is not suitable
-                                      : const AssetImage(AppAssets.logo)
-                                          as ImageProvider,
-                              backgroundColor: Colors.grey.shade200,
-                              onBackgroundImageError: (_, __) {
-                                // This is to handle if NetworkImage fails
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              brand.name ?? 'N/A',
-                              style: const TextStyle(fontSize: 12),
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                        child: DroneCard(
+                          imageUrl:
+                              '${ApiEndpoints.baseImageUrl}/${product.image}',
+                          title: product.model ?? 'N/A',
+                          description:
+                              product.description ??
+                              'No description available.',
+                          onReport:
+                              () => Get.to(
+                                () => FileReportScreen(product: product),
+                              ),
                         ),
                       );
                     },
                   ),
                 );
               }),
-
-              // const SizedBox(height: 16), // Increased spacing
-              // // Drone cards horizontal scroll - Products
-              // Obx(() {
-              //   if (homeController.isLoadingProducts.value) {
-              //     return const SizedBox(
-              //       height: 290, // Adjusted to match DroneCard height + margin
-              //       child: Center(child: CircularProgressIndicator()),
-              //     );
-              //   }
-              //   if (homeController.productsList.isEmpty) {
-              //     return SizedBox(
-              //       height: 290,
-              //       child: Center(
-              //         child: Text(
-              //           homeController.selectedFilter.isNotEmpty ||
-              //                   homeController.searchController.text.isNotEmpty
-              //               ? 'No drones match your criteria.'
-              //               : 'No drones available.',
-              //         ),
-              //       ),
-              //     );
-              //   }
-              //   return SizedBox(
-              //     height: 290,
-              //     child: ListView.builder(
-              //       scrollDirection: Axis.horizontal,
-              //       itemCount: homeController.productsList.length,
-              //       itemBuilder: (context, index) {
-              //         final Product product =
-              //             homeController.productsList[index];
-              //         return DroneCard(
-              //           // Ensure your API provides a full URL or prepend a base URL
-              //           imageUrl:
-              //               '${ApiEndpoints.baseImageUrl}/${product.image}' ??
-              //               'https://via.placeholder.com/160x120.png?text=No+Image',
-              //           title: product.model ?? 'N/A',
-              //           description:
-              //               product.description ?? 'No description available.',
-              //           onReport:
-              //               () => Get.to(FileReportScreen(product: product)),
-              //         );
-              //       },
-              //     ),
-              //   );
-              // }),
               const SizedBox(height: 16), // Increased spacing
               // Recent Report Ticket header
               Row(

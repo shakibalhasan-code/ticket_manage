@@ -22,12 +22,12 @@ class SearchScreen extends GetView<MainHomeController> {
         title: TextField(
           controller: searchEditingController,
           autofocus: true,
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             hintText: 'Search by model...',
             border: InputBorder.none,
             hintStyle: TextStyle(color: Colors.white54),
           ),
-          style: TextStyle(color: Colors.white, fontSize: 18),
+          style: const TextStyle(color: Colors.white, fontSize: 18),
           // Update the reactive search query on each change
           onChanged: (value) {
             searchQuery.value = value;
@@ -38,35 +38,29 @@ class SearchScreen extends GetView<MainHomeController> {
           Obx(() {
             return searchQuery.value.isNotEmpty
                 ? IconButton(
-                  icon: Icon(Icons.clear),
+                  icon: const Icon(Icons.clear),
                   onPressed: () {
                     searchEditingController.clear();
                     searchQuery.value = '';
                   },
                 )
-                : SizedBox.shrink();
+                : const SizedBox.shrink();
           }),
         ],
       ),
       body: Obx(() {
-        // Show a loading indicator while fetching data
         if (controller.isLoadingProducts.value) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // Filter the list based on the search query
         final displayedProducts =
             controller.productsList.where((product) {
               final titleLower = product.model?.toLowerCase() ?? '';
               final searchLower = searchQuery.value.toLowerCase();
-              // You can also search in the description
-              // final descriptionLower = product.description?.toLowerCase() ?? '';
-              // return titleLower.contains(searchLower) || descriptionLower.contains(searchLower);
               return titleLower.contains(searchLower);
             }).toList();
 
-        // Show a message if no products are found
-        if (displayedProducts.isEmpty) {
+        if (displayedProducts.isEmpty && searchQuery.value.isNotEmpty) {
           return const Center(
             child: Text(
               'No drones found.',
@@ -75,22 +69,30 @@ class SearchScreen extends GetView<MainHomeController> {
           );
         }
 
-        // Build the list of products
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ListView.builder(
-            itemCount: displayedProducts.length,
-            itemBuilder: (context, index) {
-              final product = displayedProducts[index];
-              return DroneCard(
+        // Using GridView for better responsiveness on wider screens (like tablets)
+        // is also a great option. For this example, we'll perfect the ListView.
+        return ListView.builder(
+          // Add padding to the list itself for horizontal and top/bottom space
+          padding: const EdgeInsets.all(16.0),
+          itemCount: displayedProducts.length,
+          itemBuilder: (context, index) {
+            final product = displayedProducts[index];
+            // ------------------- FIX IS HERE -------------------
+            // REMOVED the SizedBox with a fixed height.
+            // The responsive DroneCard now determines its own height.
+            // The Padding is kept to ensure vertical spacing between cards.
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: DroneCard(
                 imageUrl: '${ApiEndpoints.baseImageUrl}/${product.image}',
                 title: product.model ?? 'N/A',
                 description: product.description ?? 'No description available.',
                 onReport:
                     () => Get.to(() => FileReportScreen(product: product)),
-              );
-            },
-          ),
+              ),
+            );
+            // ------------------- END OF FIX -------------------
+          },
         );
       }),
     );

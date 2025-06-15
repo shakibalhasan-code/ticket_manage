@@ -38,7 +38,7 @@ class ReportDetailsWithMessagesScreen extends StatelessWidget {
     // Added BuildContext
     final bool isMyMessage = chatMessage.senderId == controller.currentUserId;
 
-    if (!isMyMessage && chatMessage.isSupportMessage) {
+    if (!isMyMessage) {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(12),
@@ -95,12 +95,10 @@ class ReportDetailsWithMessagesScreen extends StatelessWidget {
           constraints: BoxConstraints(maxWidth: Get.width * 0.75),
           child: Column(
             crossAxisAlignment:
-                isMyMessage
-                    ? CrossAxisAlignment.end
-                    : CrossAxisAlignment.start, // Align text inside bubble
+                isMyMessage ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (!isMyMessage && !chatMessage.isSupportMessage)
+              if (!isMyMessage)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4.0),
                   child: Text(
@@ -303,171 +301,200 @@ class ReportDetailsWithMessagesScreen extends StatelessWidget {
               ),
             ),
 
-            // --- Messages Header with Refresh ---
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                20,
-                8,
-                12,
-                8,
-              ), // Adjusted padding
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Recent Messages',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  // *** FIX: Improved refresh button logic to show a loader during any refresh action. ***
-                  Obx(() {
-                    // Always show a loader when loading messages, provides better UX.
-                    if (controller.isLoadingMessages.value) {
-                      return const Padding(
-                        padding: EdgeInsets.all(12.0),
-                        child: SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
+            // *** FIX: Conditional chat section based on report status ***
+            // The entire chat interface is only built if the report status is 'in progress'.
+            if (report.status?.toLowerCase() == 'in progress') ...[
+              // --- Messages Header with Refresh ---
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  20,
+                  8,
+                  12,
+                  8,
+                ), // Adjusted padding
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Recent Messages',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    // *** FIX: Improved refresh button logic to show a loader during any refresh action. ***
+                    Obx(() {
+                      // Always show a loader when loading messages, provides better UX.
+                      if (controller.isLoadingMessages.value) {
+                        return const Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2.5),
+                          ),
+                        );
+                      } else {
+                        return IconButton(
+                          icon: const Icon(
+                            Icons.refresh,
+                            color: Colors.black54,
+                          ),
+                          tooltip: "Refresh messages",
+                          // Call the controller's fetchMessages method.
+                          onPressed: controller.fetchMessages,
+                        );
+                      }
+                    }),
+                  ],
+                ),
+              ),
+
+              // --- Expanded Message List Section ---
+              Expanded(
+                // *** FIX: Added RefreshIndicator for pull-to-refresh functionality. ***
+                child: RefreshIndicator(
+                  // onRefresh requires a Future, which fetchMessages provides.
+                  onRefresh: controller.fetchMessages,
+                  child: Obx(() {
+                    // Show "no messages" text only after the first load is complete.
+                    if (!controller.isLoadingMessages.value &&
+                        controller.messagesList.isEmpty) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20.0),
+                          // Use a CustomScrollView to allow RefreshIndicator to work on an empty screen.
+                          child: CustomScrollView(
+                            slivers: [
+                              SliverFillRemaining(
+                                child: Center(
+                                  child: Text(
+                                    'No messages yet. Start the conversation!',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      );
-                    } else {
-                      return IconButton(
-                        icon: const Icon(Icons.refresh, color: Colors.black54),
-                        tooltip: "Refresh messages",
-                        // Call the controller's fetchMessages method.
-                        onPressed: controller.fetchMessages,
                       );
                     }
-                  }),
-                ],
-              ),
-            ),
 
-            // --- Expanded Message List Section ---
-            Expanded(
-              // *** FIX: Added RefreshIndicator for pull-to-refresh functionality. ***
-              child: RefreshIndicator(
-                // onRefresh requires a Future, which fetchMessages provides.
-                onRefresh: controller.fetchMessages,
-                child: Obx(() {
-                  // Show "no messages" text only after the first load is complete.
-                  if (!controller.isLoadingMessages.value &&
-                      controller.messagesList.isEmpty) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20.0),
-                        // Use a CustomScrollView to allow RefreshIndicator to work on an empty screen.
-                        child: CustomScrollView(
-                          slivers: [
-                            SliverFillRemaining(
-                              child: Center(
-                                child: Text(
-                                  'No messages yet. Start the conversation!',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    //ListView.builder for messages
+                    return ListView.builder(
+                      controller: controller.messageScrollController,
+                      padding: const EdgeInsets.only(
+                        left: 12,
+                        right: 12,
+                        bottom: 10,
+                      ), // Adjusted padding
+                      itemCount: controller.messagesList.length,
+                      itemBuilder: (context, index) {
+                        final chatMsg = controller.messagesList[index];
+                        return _buildMessage(chatMsg, context);
+                      },
                     );
-                  }
+                  }),
+                ),
+              ),
 
-                  //ListView.builder for messages
-                  return ListView.builder(
-                    controller: controller.messageScrollController,
-                    padding: const EdgeInsets.only(
-                      left: 12,
-                      right: 12,
-                      bottom: 10,
-                    ), // Adjusted padding
-                    itemCount: controller.messagesList.length,
-                    itemBuilder: (context, index) {
-                      final chatMsg = controller.messagesList[index];
-                      return _buildMessage(chatMsg, context);
-                    },
-                  );
-                }),
-              ),
-            ),
-
-            // --- Message Input Field (Stays at the bottom) ---
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade300)),
-                boxShadow: [
-                  // Optional: add a subtle shadow
-                  BoxShadow(
-                    offset: const Offset(0, -2),
-                    blurRadius: 4,
-                    color: Colors.black.withOpacity(0.05),
-                  ),
-                ],
-              ),
-              padding: EdgeInsets.only(
-                left: 15,
-                right: 8,
-                top: 8,
-                bottom:
-                    MediaQuery.of(context).padding.bottom + 8, // Handles notch
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: controller.messageInputController,
-                      decoration: InputDecoration(
-                        hintText: 'Type your message...',
-                        border: InputBorder.none,
-                        hintStyle: TextStyle(color: Colors.grey.shade500),
-                      ),
-                      minLines: 1,
-                      maxLines: 5, // Increased max lines
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) {
-                        if (controller.messageInputController.text
-                            .trim()
-                            .isNotEmpty) {
-                          controller.sendMessage();
-                        }
-                      },
-                      onTapOutside: (_) {
-                        // Dismiss keyboard on tap outside
-                        FocusScope.of(context).unfocus();
-                      },
+              // --- Message Input Field (Stays at the bottom) ---
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Colors.grey.shade300)),
+                  boxShadow: [
+                    // Optional: add a subtle shadow
+                    BoxShadow(
+                      offset: const Offset(0, -2),
+                      blurRadius: 4,
+                      color: Colors.black.withOpacity(0.05),
                     ),
-                  ),
-                  Obx(
-                    () =>
-                        controller.isSendingMessage.value
-                            ? const Padding(
-                              padding: EdgeInsets.all(
-                                12.0,
-                              ), // Increased padding for loader
-                              child: SizedBox(
-                                width: 20, // Matched icon button size better
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.0,
+                  ],
+                ),
+                padding: EdgeInsets.only(
+                  left: 15,
+                  right: 8,
+                  top: 8,
+                  bottom:
+                      MediaQuery.of(context).padding.bottom +
+                      8, // Handles notch
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: controller.messageInputController,
+                        decoration: InputDecoration(
+                          hintText: 'Type your message...',
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(color: Colors.grey.shade500),
+                        ),
+                        minLines: 1,
+                        maxLines: 5, // Increased max lines
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) {
+                          if (controller.messageInputController.text
+                              .trim()
+                              .isNotEmpty) {
+                            controller.sendMessage();
+                          }
+                        },
+                        onTapOutside: (_) {
+                          // Dismiss keyboard on tap outside
+                          FocusScope.of(context).unfocus();
+                        },
+                      ),
+                    ),
+                    Obx(
+                      () =>
+                          controller.isSendingMessage.value
+                              ? const Padding(
+                                padding: EdgeInsets.all(
+                                  12.0,
+                                ), // Increased padding for loader
+                                child: SizedBox(
+                                  width: 20, // Matched icon button size better
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.0,
+                                  ),
                                 ),
+                              )
+                              : IconButton(
+                                icon: Icon(
+                                  Icons
+                                      .send_rounded, // Using a rounded send icon
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                                onPressed:
+                                    controller.messageInputController.text
+                                            .trim()
+                                            .isEmpty
+                                        ? null
+                                        : controller.sendMessage,
                               ),
-                            )
-                            : IconButton(
-                              icon: Icon(
-                                Icons.send_rounded, // Using a rounded send icon
-                                color: Theme.of(context).primaryColor,
-                              ),
-                              onPressed:
-                                  controller.messageInputController.text
-                                          .trim()
-                                          .isEmpty
-                                      ? null
-                                      : controller.sendMessage,
-                            ),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ]
+            // If status is not 'in progress', show a message instead of the chat interface.
+            else ...[
+              const Spacer(), // Pushes the message towards the center
+              Padding(
+                padding: const EdgeInsets.all(30.0),
+                child: Text(
+                  'Chat is enabled once the report status is "In Progress".',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              const Spacer(), // Pushes the message towards the center
+            ],
           ],
         ),
       ),

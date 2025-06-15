@@ -204,8 +204,8 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   onTap: () {
                     showLogoutBottomSheet(context, () {
-                      profileController.clearUserData(); // Clear user data
-                      Get.offAllNamed(Routes.signIn); // Navigate to sign-in
+                      profileController.clearUserData();
+                      Get.offAllNamed(Routes.signIn);
                     });
                   },
                 ),

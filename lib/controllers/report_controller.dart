@@ -8,6 +8,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:workflowx/controllers/home_controller.dart';
 import 'package:workflowx/core/config/api_endpoints.dart';
+import 'package:workflowx/core/models/distributor_model.dart';
 import 'package:workflowx/core/models/message_model.dart';
 import 'package:workflowx/core/services/api_services.dart';
 
@@ -20,16 +21,24 @@ class ReportController extends GetxController {
   final TextEditingController messageController = TextEditingController();
   final homeController = Get.find<MainHomeController>();
 
+  // This is the correct list that will be populated.
+  RxList<DistributorModel> distributors = <DistributorModel>[].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    getApplicator();
+  }
+
   Future<bool> submitNewReport({
     required String? productId,
-    // productModel is not in the Postman 'data' field, so it's optional here
-    // unless used for something else before sending.
-    // required String? productModel,
     required String phoneNumber,
     required String? userType,
+    // *** MODIFIED: Added optional distributorId ***
+    String? distributorId,
+    required String productSerialNumber,
     required List<String>
     issueTypes, // This will be the value for the 'issue' key
-    // String? customIssueDetail, // REMOVED - This should be part of issueDescription
     required String
     issueDescription, // This should be the final, combined description
     required List<XFile> imageFiles,
@@ -37,15 +46,23 @@ class ReportController extends GetxController {
     isLoading.value = true;
     try {
       // --- 1. Prepare the 'data' field (textual information as a JSON string) ---
-      // Keys here MUST match what the backend expects (from your Postman example)
+      // Keys here MUST match what the backend expects.
       Map<String, dynamic> textDataMap = {
-        'phone': phoneNumber, // Changed from 'phoneNumber'
-        'issue': issueTypes, // Changed from 'issueTypes'. Value is List<String>
-        'userType': userType ?? 'Customer',
-        'description':
-            issueDescription, // Changed from 'issueDescription'. This is the final combined one.
+        'phone': phoneNumber,
+        'issue': issueTypes,
+        'userType': userType, // Pass userType directly
+        'description': issueDescription,
         'productId': productId ?? '',
+        'productSerialNumber': productSerialNumber,
       };
+
+      // *** MODIFIED: Conditionally add the distributor ID ***
+      // If the user is an 'Applicator' and an ID is provided, add it to the payload.
+      if (userType == 'Applicator' &&
+          distributorId != null &&
+          distributorId.isNotEmpty) {
+        textDataMap['distributor'] = distributorId;
+      }
 
       String jsonDataPayload = jsonEncode(textDataMap);
 
@@ -140,6 +157,43 @@ class ReportController extends GetxController {
       return false;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> getApplicator() async {
+    try {
+      // Assuming ApiServices.fetchData is your intended method for GET requests
+      final response = await ApiServices.fetchData(
+        url: ApiEndpoints.getApplicator,
+      );
+      final responseBody = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        // Cast the 'data' to a List<dynamic> for type safety
+        final List<dynamic> distributorJsonList = responseBody['data'];
+
+        // Clear the existing list to prevent duplicates on refresh
+        distributors.clear();
+
+        // Loop through the JSON list, parse each item, and add it to the correct list
+        for (var distributorJson in distributorJsonList) {
+          // Create a DistributorModel instance from the JSON map
+          final distributorModel = DistributorModel.fromJson(distributorJson);
+          // Add the parsed model to the 'distributors' RxList
+          distributors.add(distributorModel);
+        }
+
+        Get.log(
+          "Successfully fetched and set ${distributors.length} distributors.",
+        );
+      } else {
+        Get.snackbar('Error', '${responseBody['message']}');
+      }
+    } catch (e) {
+      printError(info: 'Failed to fetch distributors: $e');
+      Get.snackbar(
+        'Error',
+        'Could not load distributor list. Please check your connection.',
+      );
     }
   }
 }
