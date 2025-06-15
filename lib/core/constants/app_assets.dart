@@ -1,6 +1,3 @@
-/// This file contains constants for asset paths used in the project.
-/// Update this file when adding new assets or icons.
-
 class AppAssets {
   // Icons
   static const String iconHome = 'assets/icons/home.svg';
