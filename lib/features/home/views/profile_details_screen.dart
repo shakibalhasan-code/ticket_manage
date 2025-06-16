@@ -154,7 +154,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                         onTap:
                             controller.isUploadingImage.value
                                 ? null
-                                : () => controller.pickAndUploadImage(),
+                                : () => controller.pickImage(),
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.blue,

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
 import 'package:workflowx/core/config/api_endpoints.dart';
 import 'package:workflowx/core/models/user_model.dart';
 import 'package:workflowx/core/services/api_services.dart';
@@ -11,8 +10,8 @@ import 'package:workflowx/core/services/api_services.dart';
 class ProfileController extends GetxController {
   // --- STATE MANAGEMENT VARIABLES ---
   var isLoading = true.obs;
-  var isUpdating = false.obs; // For updating text details
-  var isUploadingImage = false.obs; // NEW: Specific state for image upload
+  var isUpdating = false.obs;
+  var isUploadingImage = false.obs;
   var hasError = false.obs;
 
   final Rx<UserData> userData = UserData().obs;
@@ -22,6 +21,17 @@ class ProfileController extends GetxController {
   void onInit() {
     super.onInit();
     fetchProfileData();
+
+    // --- FIX: Use a reactive worker to trigger the upload ---
+    // This 'ever' worker listens to changes in 'selectedImageFile'.
+    // When a new file is selected (not null), it automatically calls updateProfileImage.
+    ever(selectedImageFile, (File? file) {
+      if (file != null) {
+        // Add a print statement here for debugging confirmation
+        print("--- 'ever' worker detected a new file. Triggering upload. ---");
+        updateProfileImage();
+      }
+    });
   }
 
   // --- DATA FETCHING (Unchanged) ---
@@ -51,16 +61,18 @@ class ProfileController extends GetxController {
   // --- IMAGE HANDLING & UPLOADING ---
 
   /// 1. Picks an image from the gallery or camera.
-  /// 2. If an image is picked, it immediately calls `updateProfileImage()` to upload it.
-  Future<void> pickAndUploadImage() async {
+  /// The 'ever' worker in onInit() will handle triggering the upload.
+  Future<void> pickImage() async {
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await _showImageSourceSheet(picker);
 
       if (image != null) {
+        print("Image picked successfully: ${image.path}");
+        // Just update the state. The 'ever' worker will do the rest.
         selectedImageFile.value = File(image.path);
-        // Immediately trigger the upload after picking the file
-        await updateProfileImage();
+      } else {
+        print("Image picking was cancelled.");
       }
     } catch (e) {
       Get.snackbar(
@@ -73,26 +85,35 @@ class ProfileController extends GetxController {
     }
   }
 
-  /// **NEW FUNCTION 1: Update Profile Image Only**
-
+  /// **Update Profile Image Only**
+  /// This is now called automatically by the 'ever' worker.
   Future<void> updateProfileImage() async {
-    if (selectedImageFile.value == null) return;
+    if (selectedImageFile.value == null) {
+      print(
+        "updateProfileImage called but selectedImageFile is null. Aborting.",
+      );
+      return;
+    }
 
+    print(
+      "--- Starting image upload for file: ${selectedImageFile.value!.path} ---",
+    );
     isUploadingImage.value = true;
     try {
-      // This call is now correct because patchWithFile no longer needs a 'body'.
       final response = await ApiServices.patchWithFile(
-        url:
-            ApiEndpoints
-                .updateProfileImage, // Make sure this endpoint is correct
+        url: ApiEndpoints.updateProfileImage,
         file: selectedImageFile.value!,
-        fileField: 'image',
+        fileField:
+            'image', // Ensure this matches your backend ('image', 'profileImage', etc.)
       );
 
       final responseBody = jsonDecode(response.body);
+      print("Upload response: ${response.statusCode} - ${response.body}");
 
       if (response.statusCode == 200 && responseBody['success'] == true) {
+        // The UI will reactively update from the new data.
         await fetchProfileData();
+        // Clear the selected file to prevent re-uploading on next state change.
         selectedImageFile.value = null;
 
         Get.snackbar(
@@ -125,16 +146,16 @@ class ProfileController extends GetxController {
     }
   }
 
-  /// **NEW FUNCTION 2: Update Profile Details Only**
-  /// This function is called by the 'Update Profile' button and only sends text data.
+  // Renamed pickAndUploadImage to just pickImage in your UI code.
+  // The 'updateProfileDetails' function remains unchanged as it works correctly.
+
+  /// **Update Profile Details Only**
   Future<void> updateProfileDetails({
     required String fullName,
     required String phone,
   }) async {
     isUpdating.value = true;
     try {
-      // Construct the full body that the API expects.
-      final profile = userData.value.userProfile;
       final Map<String, String> textFields = {
         'fullName': fullName,
         'phone': phone,
@@ -148,8 +169,8 @@ class ProfileController extends GetxController {
       final responseBody = jsonDecode(response.body);
 
       if (response.statusCode == 200 && responseBody['success'] == true) {
-        await fetchProfileData(); // Refresh data
-        Get.back(); // Go back to the previous screen
+        await fetchProfileData();
+        Get.back();
         Get.snackbar(
           'Success',
           'Profile details updated successfully!',
@@ -180,10 +201,9 @@ class ProfileController extends GetxController {
     }
   }
 
-  // --- HELPER & CLEANUP METHODS ---
-
-  /// Helper to show the image source selection sheet.
+  // --- HELPER & CLEANUP METHODS (Unchanged) ---
   Future<XFile?> _showImageSourceSheet(ImagePicker picker) {
+    // ... no changes needed here
     return showModalBottomSheet<XFile?>(
       context: Get.context!,
       builder: (BuildContext context) {
@@ -216,6 +236,7 @@ class ProfileController extends GetxController {
   }
 
   void clearUserData() {
+    // ... no changes needed here
     userData.value = UserData();
     selectedImageFile.value = null;
   }

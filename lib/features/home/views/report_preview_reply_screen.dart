@@ -127,15 +127,19 @@ class ReportDetailsWithMessagesScreen extends StatelessWidget {
     }
   }
 
+  String get formattedTicketNo {
+    if (report.sId != null && report.sId!.length > 5) {
+      return '#${report.sId!.substring(report.sId!.length - 5).toUpperCase()}';
+    }
+    return report.sId ?? 'N/A';
+  }
+
   @override
   Widget build(BuildContext context) {
     final Map<String, String?> personalDetailsFromReport = {
       'Phone Number': report.phone,
       'User Type': report.userType,
-      'Ticket No':
-          report.sId?.isNotEmpty == true && report.sId!.length > 6
-              ? report.sId!.substring(0, 6).toUpperCase()
-              : report.sId,
+      'Ticket No': formattedTicketNo,
     };
 
     final Map<String, String?> issueDetailsFromReport = {
@@ -303,7 +307,7 @@ class ReportDetailsWithMessagesScreen extends StatelessWidget {
 
             // *** FIX: Conditional chat section based on report status ***
             // The entire chat interface is only built if the report status is 'in progress'.
-            if (report.status?.toLowerCase() == 'in progress') ...[
+            if (report.status == 'InProgress') ...[
               // --- Messages Header with Refresh ---
               Padding(
                 padding: const EdgeInsets.fromLTRB(

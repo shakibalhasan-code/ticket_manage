@@ -1,17 +1,17 @@
 class ReportModel {
   String? sId;
-  String? user; // This could be a user ID
+  String? user;
   String? phone;
   List<String>? issue;
   String? description;
-  String? note; // Added missing field from JSON
   String? userType;
-  String? distributor; // Added missing field from JSON
-  String? productSerialNumber;
+  String? distributor;
   List<String>? images;
   String? status;
   bool? isDeleted;
-  String? productId; // This could be a product ID
+  ProductModel? productId; // Changed from String? to ProductModel?
+  String? productSerialNumber;
+  String? rejectedReason; // Added new field
   String? createdAt;
   String? updatedAt;
   int? iV;
@@ -22,79 +22,112 @@ class ReportModel {
     this.phone,
     this.issue,
     this.description,
-    this.note, // Added to constructor
     this.userType,
-    this.distributor, // Added to constructor
+    this.distributor,
     this.images,
     this.status,
     this.isDeleted,
     this.productId,
     this.productSerialNumber,
+    this.rejectedReason, // Added to constructor
     this.createdAt,
     this.updatedAt,
     this.iV,
   });
 
-  // This fromJson constructor is now fixed and more robust
-  ReportModel.fromJson(Map<String, dynamic> json) {
-    sId = json['_id'];
-
-    // --- FIX 1: Handle populated 'user' field ---
-    // Check if 'user' is a Map (populated object) or a simple String ID
-    if (json['user'] is Map<String, dynamic>) {
-      user = json['user']['_id']; // Extract the ID from the map
-    } else {
-      user = json['user']; // It's already a String
-    }
-
-    phone = json['phone'];
-    // Use List.from for safer casting
-    issue = json['issue'] != null ? List<String>.from(json['issue']) : [];
-    description = json['description'];
-    note = json['note']; // Mapped the 'note' field
-    userType = json['userType'];
-    distributor = json['distributor']; // Mapped the 'distributor' field
-    images = json['images'] != null ? List<String>.from(json['images']) : [];
-    status = json['status'];
-
-    // --- FIX 2: Correctly map 'productSerialNumber' ---
-    // The original code was incorrectly assigning this to 'status' again.
-    productSerialNumber = json['productSerialNumber'];
-
-    isDeleted = json['isDeleted'];
-
-    // --- FIX 3: Handle populated 'productId' field ---
-    // Do the same check for productId
-    if (json['productId'] is Map<String, dynamic>) {
-      productId = json['productId']['_id'];
-    } else {
-      productId = json['productId'];
-    }
-
-    createdAt = json['createdAt'];
-    updatedAt = json['updatedAt'];
-    iV = json['__v'];
+  factory ReportModel.fromJson(Map<String, dynamic> json) {
+    return ReportModel(
+      sId: json['_id'],
+      user: json['user'],
+      phone: json['phone'],
+      issue: json['issue'] != null ? List<String>.from(json['issue']) : [],
+      description: json['description'],
+      userType: json['userType'],
+      distributor: json['distributor'],
+      images: json['images'] != null ? List<String>.from(json['images']) : [],
+      status: json['status'],
+      isDeleted: json['isDeleted'],
+      // Correctly parse the nested Product object
+      productId:
+          json['productId'] != null
+              ? ProductModel.fromJson(json['productId'])
+              : null,
+      productSerialNumber: json['productSerialNumber'],
+      // Map the new rejectedReason field
+      rejectedReason: json['rejectedReason'],
+      createdAt: json['createdAt'],
+      updatedAt: json['updatedAt'],
+      iV: json['__v'],
+    );
   }
 
-  // No changes needed for toJson, but good practice to include all fields
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['user'] = this.user;
-    data['phone'] = this.phone;
-    data['issue'] = this.issue;
-    data['description'] = this.description;
-    data['note'] = this.note;
-    data['userType'] = this.userType;
-    data['distributor'] = this.distributor;
-    data['images'] = this.images;
-    data['status'] = this.status;
-    data['productSerialNumber'] = this.productSerialNumber;
-    data['isDeleted'] = this.isDeleted;
-    data['productId'] = this.productId;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['user'] = user;
+    data['phone'] = phone;
+    data['issue'] = issue;
+    data['description'] = description;
+    data['userType'] = userType;
+    data['distributor'] = distributor;
+    data['images'] = images;
+    data['status'] = status;
+    data['isDeleted'] = isDeleted;
+    // Correctly convert the ProductModel object back to a map
+    if (productId != null) {
+      data['productId'] = productId!.toJson();
+    }
+    data['productSerialNumber'] = productSerialNumber;
+    data['rejectedReason'] = rejectedReason;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
+    return data;
+  }
+}
+
+class ProductModel {
+  String? sId;
+  String? model;
+  String? image;
+  String? description;
+  bool? isDeleted;
+  String? createdAt;
+  String? updatedAt;
+  int? iV;
+
+  ProductModel({
+    this.sId,
+    this.model,
+    this.image,
+    this.description,
+    this.isDeleted,
+    this.createdAt,
+    this.updatedAt,
+    this.iV,
+  });
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) => ProductModel(
+    sId: json["_id"],
+    model: json["model"],
+    image: json["image"],
+    description: json["description"],
+    isDeleted: json["isDeleted"],
+    createdAt: json["createdAt"],
+    updatedAt: json["updatedAt"],
+    iV: json["__v"],
+  );
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['model'] = model;
+    data['image'] = image;
+    data['description'] = description;
+    data['isDeleted'] = isDeleted;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
     return data;
   }
 }
