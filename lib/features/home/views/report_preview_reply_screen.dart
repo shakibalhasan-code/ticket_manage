@@ -107,6 +107,7 @@ class ReportDetailsWithMessagesScreen extends StatelessWidget {
       'Phone Number': report.phone,
       'User Type': report.userType,
       'Ticket No': formattedTicketNo,
+      'Product': report.productId!.model ?? 'N/A',
     };
 
     final issueDetails = {
