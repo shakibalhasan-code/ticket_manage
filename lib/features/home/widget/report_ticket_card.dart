@@ -126,7 +126,7 @@ class ReportTicketCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   // Assuming report.user is an ID. Ideally, you'd have a userName field.
-                  "User: ${report.user ?? 'N/A'}",
+                  "User: ${report.userType ?? 'N/A'}",
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
                 ),
               ],
