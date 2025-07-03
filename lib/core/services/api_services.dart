@@ -35,6 +35,43 @@ class ApiServices {
     }
   }
 
+  static Future<http.Response> delete({required String url}) async {
+    try {
+      final token = await PrefHelper.getString(AppConstants.token);
+      if (token == null || token.isEmpty) {
+        // This specific toast for a client-side check might still be desired.
+        // If you want to remove ALL toasts from ApiServices, remove this too
+        GlobalBase.showToast(
+          'Authentication token is missing. Please login again.',
+          true,
+        );
+        throw Exception('Authentication token is missing. Please login again.');
+      }
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      // _handleResponseMessages(response); // REMOVED
+      if (response.statusCode == 200) {
+        print('Response Body (GET $url): ${response.body}');
+        return response;
+      } else {
+        print('Error Response Body (GET $url): ${response.body}');
+        // Let the calling code interpret the body for specific error messages
+        throw Exception(
+          'Failed to load data from $url. Status code: ${response.statusCode}. Body: ${response.body}',
+        );
+      }
+    } catch (e) {
+      print('Exception in getRequest ($url): $e');
+      rethrow;
+    }
+  }
+
   static Future<http.Response> fetchData({required String url}) async {
     try {
       final token = await PrefHelper.getString(AppConstants.token);

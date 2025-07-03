@@ -85,6 +85,45 @@ class ProfileController extends GetxController {
     }
   }
 
+  Future<void> deleteAccount(BuildContext context) async {
+    // This method is not changed, but you can add error handling if needed.
+    try {
+      final response = await ApiServices.delete(
+        url: ApiEndpoints.deleteAccount,
+      );
+      final responseBody = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && responseBody['success'] == true) {
+        clearUserData();
+        Get.offAllNamed('/login');
+        Get.snackbar(
+          'Success',
+          'Account deleted successfully.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          responseBody['message'] ?? 'Could not delete account.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      printError(info: 'Error deleting account: $e');
+      Get.snackbar(
+        'Error',
+        'An unexpected error occurred while deleting the account.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
   /// **Update Profile Image Only**
   /// This is now called automatically by the 'ever' worker.
   Future<void> updateProfileImage() async {

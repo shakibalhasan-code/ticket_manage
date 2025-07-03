@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:workflowx/controllers/profile_controller.dart';
 import 'package:workflowx/core/config/api_endpoints.dart';
 import 'package:workflowx/core/constants/app_assets.dart';
@@ -177,8 +178,6 @@ class ProfileScreen extends StatelessWidget {
                   },
                 ),
 
-                // NOTE: This should probably navigate to a change password screen,
-                // not trigger a logout.
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: SvgIcon(
@@ -194,7 +193,45 @@ class ProfileScreen extends StatelessWidget {
                     Get.to(ChangePassScreen());
                   },
                 ),
-
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: HugeIcon(
+                    icon: HugeIcons.strokeRoundedDelete01,
+                    color: Colors.red,
+                    size: 20.sp,
+                  ),
+                  title: const Text(
+                    'Delete Account',
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                  onTap: () {
+                    Get.dialog(
+                      AlertDialog(
+                        title: const Text('Delete Account'),
+                        content: const Text(
+                          'Are you sure you want to delete your account? This action cannot be undone.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Get.back(),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              await profileController.deleteAccount(context);
+                              Get.back();
+                              Get.offAllNamed(Routes.signIn);
+                            },
+                            child: const Text(
+                              'Delete',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const SvgIcon(assetName: AppAssets.iconLogout),

@@ -45,4 +45,6 @@ class ApiEndpoints {
   static String updateUserProfileImage = '$baseUrl/user/update-profile-image';
 
   static String getApplicator = '$baseUrl/distributor';
+
+  static String deleteAccount = '$baseUrl/user/delete-me';
 }
