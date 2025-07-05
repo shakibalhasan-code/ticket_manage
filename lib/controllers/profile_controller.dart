@@ -92,6 +92,7 @@ class ProfileController extends GetxController {
         url: ApiEndpoints.deleteAccount,
       );
       final responseBody = jsonDecode(response.body);
+      final message = responseBody['message'] ?? 'Unknown error';
 
       if (response.statusCode == 200 && responseBody['success'] == true) {
         clearUserData();
