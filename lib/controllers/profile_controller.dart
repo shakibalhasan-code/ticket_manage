@@ -3,9 +3,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workflowx/core/config/api_endpoints.dart';
+import 'package:workflowx/core/config/app_constants.dart';
+import 'package:workflowx/core/helper/pref_helper.dart';
 import 'package:workflowx/core/models/user_model.dart';
 import 'package:workflowx/core/services/api_services.dart';
+import 'package:workflowx/core/utils/utils.dart';
+import 'package:workflowx/features/auth/view/sign_in_screen.dart';
 
 class ProfileController extends GetxController {
   // --- STATE MANAGEMENT VARIABLES ---
@@ -96,6 +101,8 @@ class ProfileController extends GetxController {
 
       if (response.statusCode == 200 && responseBody['success'] == true) {
         clearUserData();
+        await PrefHelper.remove(AppConstants.token);
+
         Get.offAllNamed('/login');
         Get.snackbar(
           'Success',
@@ -275,9 +282,11 @@ class ProfileController extends GetxController {
     );
   }
 
-  void clearUserData() {
+  void clearUserData() async{
     // ... no changes needed here
     userData.value = UserData();
     selectedImageFile.value = null;
+    await PrefHelper.remove(AppConstants.token);
+    Get.offAll(SignInScreen());
   }
 }

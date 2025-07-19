@@ -1,7 +1,7 @@
 class ApiEndpoints {
   // Base URL for images
-  static const String baseImageUrl = 'http://192.168.10.18:5001';
-  static const String baseUrl = 'http://192.168.10.18:5001/api';
+  static const String baseImageUrl = 'http://157.245.9.24:5001';
+  static const String baseUrl =      'http://157.245.9.24:5001/api';
 
   static const String login = '$baseUrl/auth/login';
   static const String register = '$baseUrl/auth/create-user';
@@ -46,5 +46,5 @@ class ApiEndpoints {
 
   static String getApplicator = '$baseUrl/distributor';
 
-  static String deleteAccount = '$baseUrl/user/delete-me';
+  static String deleteAccount = '$baseUrl/user/me';
 }

@@ -7,7 +7,7 @@ import 'package:workflowx/features/auth/controllers/auth_controller.dart';
 class SignInScreen extends StatelessWidget {
   SignInScreen({super.key});
 
-  final controller = Get.find<AuthController>();
+  final controller = Get.put(AuthController());
 
   @override
   Widget build(BuildContext context) {

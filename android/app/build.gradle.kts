@@ -29,9 +29,9 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("customer_suppport.keystore")
+            storeFile = file("customer_support_key.jks")
             storePassword = "12345678"
-            keyAlias = "customer_support_key"
+            keyAlias = "my-key-alias"
             keyPassword = "12345678"
         }
     }
@@ -39,7 +39,6 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true // Enables code shrinking (R8)
-            
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("release")
         }

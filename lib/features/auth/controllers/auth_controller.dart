@@ -23,7 +23,7 @@ class AuthController extends GetxController {
   final TextEditingController confirmPassController = TextEditingController();
 
   var isLoading = false.obs;
-  var isPasswordVisible = false.obs;
+  var isPasswordVisible = true.obs;
   var agreeToPrivacyPolicy = false.obs;
 
   // --- State for Change Password Screen ---
@@ -40,11 +40,6 @@ class AuthController extends GetxController {
 
   @override
   void onClose() {
-    emailController.dispose();
-    passwordController.dispose();
-    newPasswordController.dispose();
-    confirmPassContoller.dispose();
-    fullNameController.dispose();
 
     super.onClose();
   }
@@ -65,7 +60,7 @@ class AuthController extends GetxController {
 
       if (response.statusCode == 200) {
         // After registration, navigate to OTP verification screen
-        Get.offAllNamed(Routes.forgotPasswordVerify);
+        Get.toNamed(Routes.forgotPasswordVerify);
       } else {
         final responseData = jsonDecode(response.body);
       }
@@ -87,6 +82,14 @@ class AuthController extends GetxController {
         url: ApiEndpoints.login,
         body: body,
       );
+
+      if (response.statusCode == 401){
+        final body = jsonDecode(response.body);
+        Get.snackbar('Failed', body['message']);
+        return;
+      }
+
+
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         final token = responseData['data']['accessToken'] ?? '';

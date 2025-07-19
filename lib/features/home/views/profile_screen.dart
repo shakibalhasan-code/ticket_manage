@@ -1,14 +1,19 @@
 // lib/features/home/views/profile_screen.dart
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:workflowx/controllers/profile_controller.dart';
 import 'package:workflowx/core/config/api_endpoints.dart';
+import 'package:workflowx/core/config/app_constants.dart';
 import 'package:workflowx/core/constants/app_assets.dart';
+import 'package:workflowx/core/helper/pref_helper.dart';
 import 'package:workflowx/core/routes/app_pages.dart';
 import 'package:workflowx/core/utils/svg_icon.dart';
+import 'package:workflowx/features/auth/view/sign_in_screen.dart';
 import 'package:workflowx/features/home/views/change_pass_screen.dart';
 import 'package:workflowx/features/home/views/profile_details_screen.dart';
 
@@ -261,5 +266,101 @@ void showLogoutBottomSheet(
   BuildContext context,
   VoidCallback onLogoutConfirmed,
 ) {
-  // ... (no changes needed here)
+  Get.bottomSheet(
+    BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+      child: Container(
+        padding: const EdgeInsets.all(24.0),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20.0),
+            topRight: Radius.circular(20.0),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text(
+              'Log Out',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Are you sure you want to log out?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Get.back(),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(color: Colors.grey.shade400),
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onLogoutConfirmed,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: const Text(
+                      'Log Out',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+    enterBottomSheetDuration: const Duration(milliseconds: 300),
+    exitBottomSheetDuration: const Duration(milliseconds: 250),
+    isScrollControlled: true,
+  );
+}
+
+// Example of how to call the function and handle the logout logic
+void handleLogout() async {
+  final token = await PrefHelper.getString(AppConstants.token);
+  if (token != null) {
+    await PrefHelper.remove(AppConstants.token);
+    Get.offAll(() => SignInScreen());
+  }
 }

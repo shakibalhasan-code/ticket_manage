@@ -17,7 +17,7 @@ class OtpVerificationScreen extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () {
-            Get.back();
+            Navigator.pop(context);
           },
         ),
         backgroundColor: Colors.transparent,
