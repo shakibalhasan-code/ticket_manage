@@ -1,7 +1,8 @@
 class ApiEndpoints {
+  
   // Base URL for images
-  static const String baseImageUrl = 'http://157.245.9.24:5001';
-  static const String baseUrl =      'http://157.245.9.24:5001/api';
+  static const String baseImageUrl = 'http://157.245.9.24:5002';
+  static const String baseUrl =      'http://157.245.9.24:5002/api';
 
   static const String login = '$baseUrl/auth/login';
   static const String register = '$baseUrl/auth/create-user';
